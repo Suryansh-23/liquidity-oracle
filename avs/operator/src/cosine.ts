@@ -5,7 +5,7 @@ const cosineMag = <L extends number>(v: Vector<L>): number => {
   return Math.sqrt(sum);
 };
 
-export const cosine = (vp: VectorPair<number>): number => {
+const cosine = (vp: VectorPair<number>): number => {
   const [a, b] = vp;
   const dot_product = a.reduce((acc, [_, x], i) => acc + x * b[i][1], 0);
   const magnitude_product = cosineMag(a) * cosineMag(b);
@@ -13,3 +13,5 @@ export const cosine = (vp: VectorPair<number>): number => {
     ? parseFloat((dot_product / magnitude_product).toFixed(5))
     : 0;
 };
+
+export default cosine;

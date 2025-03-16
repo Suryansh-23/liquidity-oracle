@@ -28,3 +28,14 @@ export const curveToVectorPair = (c1: Curve, c2: Curve): VectorPair<number> => {
 
   return [c1 as Vector<number>, c2 as Vector<number>];
 };
+
+export const sumNormalize = (
+  v: Vector<number>,
+  sum?: number
+): Vector<number> => {
+  if (sum === undefined) {
+    sum = v.reduce((acc, [_, x]) => acc + x, 0);
+  }
+
+  return v.map(([x, y]) => [x, y / sum]);
+};
