@@ -20,8 +20,7 @@
   },
   "dependencies": {
     "dotenv": "^10.0.0",
-    "ethers": "^6.13.2",
-    "hungarian-on3": "^0.3.1"
+    "ethers": "^6.13.2"
   },
   "devDependencies": {
     "@types/jest": "^29.5.13",
