@@ -1,5 +1,5 @@
-import { VectorPair } from "./types";
-import { sumNormalize } from "./utils";
+import { VectorPair } from "../types";
+import { sumNormalize } from "../utils";
 
 const hellingerDistance = (vp: VectorPair<number>): number => {
   let [p, q] = vp;
