@@ -3,6 +3,7 @@ import { VectorPair } from "../types";
 import cosine from "./cosine";
 import hellingerDistance from "./hellinger";
 import wassersteinDistance from "./wasserstein";
+import transitionDelta, { CompositeMetricConfig } from "./index";
 
 describe("Distance Metrics", () => {
   describe("Wasserstein Distance", () => {
@@ -756,6 +757,146 @@ describe("Distance Metrics", () => {
         ],
       ];
       expect(hellingerDistance(dist1)).toBeCloseTo(hellingerDistance(dist2), 5);
+    });
+  });
+
+  describe("Transition Delta", () => {
+    it("should return 0 for identical distributions", () => {
+      const p: [number, number][] = [
+        [1, 0.5],
+        [2, 0.5],
+      ];
+      const q: [number, number][] = [
+        [1, 0.5],
+        [2, 0.5],
+      ];
+      const vp: VectorPair<number> = [p, q];
+
+      expect(transitionDelta(vp)).toBeCloseTo(0);
+    });
+
+    it("should return higher values for more dissimilar distributions", () => {
+      const p: [number, number][] = [
+        [1, 2],
+        [2, 0],
+      ];
+      const q: [number, number][] = [
+        [1, 0],
+        [2, 2],
+      ];
+      const vp: VectorPair<number> = [p, q];
+
+      expect(transitionDelta(vp)).toBeGreaterThan(0.44);
+    });
+
+    it("should respect custom weights", () => {
+      const p: [number, number][] = [
+        [1, 0.3],
+        [2, 0.7],
+      ];
+      const q: [number, number][] = [
+        [1, 0.7],
+        [2, 0.3],
+      ];
+      const vp: VectorPair<number> = [p, q];
+
+      const config: CompositeMetricConfig = {
+        wassersteinWeight: 0.2,
+        hellingerWeight: 0.6,
+        cosineWeight: 0.2,
+      };
+
+      const defaultDelta = transitionDelta(vp);
+      const customDelta = transitionDelta(vp, config);
+
+      expect(defaultDelta).not.toBe(customDelta);
+    });
+
+    it("should handle dynamic min-max scaling for Wasserstein distance", () => {
+      const p: [number, number][] = [
+        [1, 100],
+        [2, 200],
+      ];
+      const q: [number, number][] = [
+        [1, 150],
+        [2, 250],
+      ];
+      const vp: VectorPair<number> = [p, q];
+
+      const delta = transitionDelta(vp);
+      expect(delta).toBeGreaterThan(0);
+      expect(delta).toBeLessThan(1);
+
+      // Test with larger values to ensure scaling works
+      const largeP: [number, number][] = [
+        [1, 10000],
+        [2, 20000],
+      ];
+      const largeQ: [number, number][] = [
+        [1, 15000],
+        [2, 25000],
+      ];
+      const largeVP: VectorPair<number> = [largeP, largeQ];
+
+      const largeDelta = transitionDelta(largeVP);
+      // The normalized result should be similar despite different scales
+      expect(largeDelta).toBeCloseTo(delta, 1);
+    });
+
+    it("should be symmetric", () => {
+      const dist1: VectorPair<number> = [
+        [
+          [1, 0.3],
+          [2, 0.7],
+        ],
+        [
+          [1, 0.7],
+          [2, 0.3],
+        ],
+      ];
+      const dist2: VectorPair<number> = [
+        [
+          [1, 0.7],
+          [2, 0.3],
+        ],
+        [
+          [1, 0.3],
+          [2, 0.7],
+        ],
+      ];
+      expect(transitionDelta(dist1)).toBeCloseTo(transitionDelta(dist2), 5);
+    });
+
+    it("should handle extreme value differences", () => {
+      const p: [number, number][] = [
+        [1, 1],
+        [2, 100000],
+      ];
+      const q: [number, number][] = [
+        [1, 100000],
+        [2, 1],
+      ];
+      const vp: VectorPair<number> = [p, q];
+
+      const delta = transitionDelta(vp);
+      expect(delta).toBeGreaterThan(0);
+      expect(delta).toBeLessThan(1);
+    });
+
+    it("should handle zero values correctly", () => {
+      const p: [number, number][] = [
+        [1, 0],
+        [2, 100],
+      ];
+      const q: [number, number][] = [
+        [1, 100],
+        [2, 0],
+      ];
+      const vp: VectorPair<number> = [p, q];
+
+      const delta = transitionDelta(vp);
+      expect(delta).toBeGreaterThan(0);
+      expect(delta).toBeLessThan(1);
     });
   });
 });
