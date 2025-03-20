@@ -17,6 +17,7 @@ import transitionVolatility from "./transitionVolatility";
 export default class Volatility {
   private latestDistribution: Curve = [];
   private window: VolatilitySnapshot[] = [];
+  private prevTransitionVol: number = 0;
   private maxSize: number;
   private snapshotSize: number;
 
@@ -59,10 +60,15 @@ export default class Volatility {
    */
   private compute(): VolatilityResult {
     const overall = overallVolatility(this.window);
-    const transition = transitionVolatility(this.window);
+    const transition = transitionVolatility(
+      this.window,
+      this.prevTransitionVol
+    );
     const perTick = perTickVolatility(this.window, this.snapshotSize);
     const entropy = entropyVolatility(this.window);
     const temporal = temporalDependence(this.window);
+
+    this.prevTransitionVol = transition;
 
     const scores: VolatilityScores = {
       overall,

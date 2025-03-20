@@ -1,5 +1,35 @@
 import { Curve, Vector, VectorPair } from "./types";
 
+export const distributionToCurve = (
+  distribution: number[],
+  start: number,
+  end: number,
+  tickSpacing: number
+): Curve => {
+  if (distribution.length !== Math.floor((end - start) / tickSpacing) + 1) {
+    throw new Error(
+      `Distribution length ${
+        distribution.length
+      } does not match expected length ${
+        Math.floor((end - start) / tickSpacing) + 1
+      }`
+    );
+  }
+
+  const curve: Curve = [];
+
+  for (let i = start; i <= end; i += tickSpacing) {
+    const index = Math.floor((i - start) / tickSpacing);
+    if (index < distribution.length) {
+      curve.push([i, distribution[index]]);
+    } else {
+      curve.push([i, 0]);
+    }
+  }
+
+  return curve;
+};
+
 export const curveToVectorPair = (c1: Curve, c2: Curve): VectorPair<number> => {
   if (c1.length !== c2.length) {
     throw new Error("Curves must have the same length");
