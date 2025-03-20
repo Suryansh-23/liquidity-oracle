@@ -3,7 +3,7 @@ import { VectorPair } from "../types";
 import cosine from "./cosine";
 import hellingerDistance from "./hellinger";
 import wassersteinDistance from "./wasserstein";
-import transitionDelta, { CompositeMetricConfig } from "./index";
+import computeTransitionDelta, { CompositeMetricConfig } from "./index";
 
 describe("Distance Metrics", () => {
   describe("Wasserstein Distance", () => {
@@ -772,7 +772,7 @@ describe("Distance Metrics", () => {
       ];
       const vp: VectorPair<number> = [p, q];
 
-      expect(transitionDelta(vp)).toBeCloseTo(0);
+      expect(computeTransitionDelta(vp)).toBeCloseTo(0);
     });
 
     it("should return higher values for more dissimilar distributions", () => {
@@ -786,7 +786,7 @@ describe("Distance Metrics", () => {
       ];
       const vp: VectorPair<number> = [p, q];
 
-      expect(transitionDelta(vp)).toBeGreaterThan(0.44);
+      expect(computeTransitionDelta(vp)).toBeGreaterThan(0.44);
     });
 
     it("should respect custom weights", () => {
@@ -806,8 +806,8 @@ describe("Distance Metrics", () => {
         cosineWeight: 0.2,
       };
 
-      const defaultDelta = transitionDelta(vp);
-      const customDelta = transitionDelta(vp, config);
+      const defaultDelta = computeTransitionDelta(vp);
+      const customDelta = computeTransitionDelta(vp, config);
 
       expect(defaultDelta).not.toBe(customDelta);
     });
@@ -823,7 +823,7 @@ describe("Distance Metrics", () => {
       ];
       const vp: VectorPair<number> = [p, q];
 
-      const delta = transitionDelta(vp);
+      const delta = computeTransitionDelta(vp);
       expect(delta).toBeGreaterThan(0);
       expect(delta).toBeLessThan(1);
 
@@ -838,7 +838,7 @@ describe("Distance Metrics", () => {
       ];
       const largeVP: VectorPair<number> = [largeP, largeQ];
 
-      const largeDelta = transitionDelta(largeVP);
+      const largeDelta = computeTransitionDelta(largeVP);
       // The normalized result should be similar despite different scales
       expect(largeDelta).toBeCloseTo(delta, 1);
     });
@@ -864,7 +864,10 @@ describe("Distance Metrics", () => {
           [2, 0.7],
         ],
       ];
-      expect(transitionDelta(dist1)).toBeCloseTo(transitionDelta(dist2), 5);
+      expect(computeTransitionDelta(dist1)).toBeCloseTo(
+        computeTransitionDelta(dist2),
+        5
+      );
     });
 
     it("should handle extreme value differences", () => {
@@ -878,7 +881,7 @@ describe("Distance Metrics", () => {
       ];
       const vp: VectorPair<number> = [p, q];
 
-      const delta = transitionDelta(vp);
+      const delta = computeTransitionDelta(vp);
       expect(delta).toBeGreaterThan(0);
       expect(delta).toBeLessThan(1);
     });
@@ -894,7 +897,7 @@ describe("Distance Metrics", () => {
       ];
       const vp: VectorPair<number> = [p, q];
 
-      const delta = transitionDelta(vp);
+      const delta = computeTransitionDelta(vp);
       expect(delta).toBeGreaterThan(0);
       expect(delta).toBeLessThan(1);
     });

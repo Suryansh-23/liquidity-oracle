@@ -3,8 +3,8 @@ export type Curve = [number, number][];
 export type Vector<L extends number> = { length: L } & [...[number, number][]];
 export type VectorPair<L extends number> = [Vector<L>, Vector<L>];
 
-// Base compute function type
-export type ComputeFunction = (window: number[]) => number;
+// Base compute function type - now accepts array of snapshots
+export type ComputeFunction = (window: number[][]) => number;
 
 // Configuration for each compute function
 export interface ComputeConfig {
@@ -27,4 +27,34 @@ export interface RunnerConfig {
 export interface ComputeResults {
   individualScores: Map<string, number>;
   aggregatedScore: number;
+}
+
+// Volatility-specific types
+export interface VolatilitySnapshot {
+  liquidity: Vector<number>;
+  transition?: number;
+}
+
+export interface VolatilityResult {
+  overall: number;
+  transition: number;
+  perTick: number;
+  entropy: number;
+  temporal: number;
+  aggregate: number;
+}
+export interface VolatilityScores {
+  overall: number;
+  transition: number;
+  perTick: number;
+  entropy: number;
+  temporal: number;
+}
+
+export interface VolatilityWeights {
+  overall: number;
+  transition: number;
+  perTick: number;
+  entropy: number;
+  temporal: number;
 }

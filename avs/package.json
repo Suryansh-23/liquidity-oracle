@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "dotenv": "^10.0.0",
-    "ethers": "^6.13.2"
+    "ethers": "^6.13.2",
+    "simple-statistics": "^7.8.8"
   },
   "devDependencies": {
     "@types/jest": "^29.5.13",

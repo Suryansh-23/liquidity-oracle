@@ -80,7 +80,7 @@ const normalizeWasserstein = (
  * @param config - Optional configuration for weights and parameters
  * @returns A number in range [0, 1] representing the composite distance
  */
-const transitionDelta = (
+const computeTransitionDelta = (
   vp: VectorPair<number>,
   config: CompositeMetricConfig = {}
 ): number => {
@@ -108,4 +108,4 @@ const transitionDelta = (
   );
 };
 
-export default transitionDelta;
+export default computeTransitionDelta;

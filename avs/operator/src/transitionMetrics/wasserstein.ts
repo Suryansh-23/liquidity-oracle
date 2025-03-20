@@ -26,7 +26,7 @@ const wassersteinDistance = (vp: VectorPair<number>): number => {
  * whose respective CDFs are U and V, defined as:
  *
  * l_p(u, v) = (∫_{-∞}^{+∞} |U-V|^p)^(1/p)
- *  
+ *
  * For our case, p is fixed at 1, which gives the Wasserstein distance.
  *
  * @param u_values - Values observed in the first empirical distribution.

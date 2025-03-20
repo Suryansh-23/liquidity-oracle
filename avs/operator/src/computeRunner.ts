@@ -15,10 +15,11 @@ class ComputeRunner {
   }
 
   /**
-   * Add a new value to the window and compute all scores
+   * Add a new liquidity distribution snapshot to the window and compute all scores
+   * @param distribution An array representing liquidity distribution across ticks
    */
-  addValue(value: number): ComputeResults {
-    this.windowManager.add(value);
+  addValue(distribution: number[]): ComputeResults {
+    this.windowManager.add(distribution);
     return this.compute();
   }
 
@@ -49,9 +50,9 @@ class ComputeRunner {
   }
 
   /**
-   * Get the current window data
+   * Get the current window data containing all liquidity distribution snapshots
    */
-  getWindow(): number[] {
+  getWindow(): number[][] {
     return this.windowManager.getWindow();
   }
 }
