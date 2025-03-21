@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.26;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
@@ -59,15 +59,26 @@ contract OracleHook is BaseHook, Ownable {
         IPoolManager _poolManager
     ) BaseHook(_poolManager) Ownable(msg.sender) {}
 
+    /**
+     * @notice sets the service manager address
+     * @dev only the owner can call this function
+     * @param _serviceManager the service manager address
+     */
     function setServiceManager(address _serviceManager) external onlyOwner {
         serviceManager = _serviceManager;
     }
 
+    /**
+     * @notice updates the pool metrics
+     * @dev only the service manager can call this function
+     * @param _poolId the pool id
+     * @param _poolMetrics the pool metrics
+     */
     function updatePoolMetrics(
         bytes32 _poolId,
         PoolMetrics memory _poolMetrics
     ) external {
-        if (msg.sender != serviceManger) revert OracleHook__NotAuthorized();
+        if (msg.sender != serviceManager) revert OracleHook__NotAuthorized();
         poolMetrics[PoolId.wrap(_poolId)] = _poolMetrics;
     }
 
@@ -152,6 +163,7 @@ contract OracleHook is BaseHook, Ownable {
         return (this.afterRemoveLiquidity.selector, delta);
     }
 
+    /// @dev updates the local range parameters after a liquidity modification
     function _afterModifyLiquidity(
         PoolKey calldata key,
         IPoolManager.ModifyLiquidityParams calldata params
@@ -203,6 +215,10 @@ contract OracleHook is BaseHook, Ownable {
         return (this.afterSwap.selector, 0);
     }
 
+    /**
+     * @dev triggers the AVS computation for the given pool and updates the snapshot parameters
+     * @param key the pool key
+     */
     function _triggerAVSComputation(PoolKey memory key) internal {
         PoolId poolId = key.toId();
         LocalRangeParams memory localRange = localRanges[poolId];
@@ -228,7 +244,7 @@ contract OracleHook is BaseHook, Ownable {
             ];
         }
 
-        IOracleServiceManager(serviceManger).createNewTask(
+        IOracleServiceManager(serviceManager).createNewTask(
             PoolId.unwrap(poolId),
             tickLower,
             tickUpper,
@@ -238,6 +254,12 @@ contract OracleHook is BaseHook, Ownable {
         );
     }
 
+    /**
+     * @dev updates the local range parameters
+     * @param _key the pool key
+     * @param _tickLower the lower tick of the range
+     * @param _tickUpper the upper tick of the range
+     */
     function _updateLocalRangeParams(
         PoolKey calldata _key,
         int24 _tickLower,
@@ -272,6 +294,12 @@ contract OracleHook is BaseHook, Ownable {
         localRanges[poolId] = localRange;
     }
 
+    /**
+     * @dev removes the tick liquidity for the given tick range
+     * @param key the pool key
+     * @param tickLower the lower tick of the range
+     * @param tickUpper the upper tick of the range
+     */
     function _removeTickLiquidities(
         PoolKey calldata key,
         int24 tickLower,
@@ -291,6 +319,12 @@ contract OracleHook is BaseHook, Ownable {
         return totalLiquidity;
     }
 
+    /**
+     * @dev updates the tick liquidity for the given range
+     * @param key the pool key
+     * @param tickLower the lower tick of the range
+     * @param tickUpper the upper tick of the range
+     */
     function _updateLocalRangeLiquidity(
         PoolKey calldata key,
         int24 tickLower,
@@ -313,6 +347,7 @@ contract OracleHook is BaseHook, Ownable {
         localRanges[poolId] = localRange;
     }
 
+    /// @notice returns the liquidity transition metric value for the pool
     function getLiquidityTransition(
         PoolId poolId
     ) external view returns (uint256 liqTransition) {
@@ -320,6 +355,7 @@ contract OracleHook is BaseHook, Ownable {
         if (liqTransition == 0) revert OracleHook__DataNotAvailable();
     }
 
+    /// @notice returns the volatility of a pool
     function getVolatility(
         PoolId poolId
     ) external view returns (uint256 volatility) {
@@ -327,6 +363,7 @@ contract OracleHook is BaseHook, Ownable {
         if (volatility == 0) revert OracleHook__DataNotAvailable();
     }
 
+    /// @notice returns the liquidity time to live of a pool
     function getLiquidityTimeToLive(
         PoolId poolId
     ) external view returns (uint256 liqTimeToLive) {
@@ -334,16 +371,19 @@ contract OracleHook is BaseHook, Ownable {
         if (liqTimeToLive == 0) revert OracleHook__DataNotAvailable();
     }
 
+    /// @notice returns the depth of a pool
     function getDepth(PoolId poolId) external view returns (uint256 depth) {
         depth = poolMetrics[poolId].depth;
         if (depth == 0) revert OracleHook__DataNotAvailable();
     }
 
+    /// @notice returns the spread of a pool
     function getSpread(PoolId poolId) external view returns (uint256 spread) {
         spread = poolMetrics[poolId].spread;
         if (spread == 0) revert OracleHook__DataNotAvailable();
     }
 
+    /// @notice returns the liquidity concentration of a pool
     function getLiquidityConcentration(
         PoolId poolId
     ) external view returns (uint256 liqConcentration) {
@@ -351,6 +391,7 @@ contract OracleHook is BaseHook, Ownable {
         if (liqConcentration == 0) revert OracleHook__DataNotAvailable();
     }
 
+    /// @dev checks if the threshold is reached to trigger the AVS computation
     function _isThresholdReached(
         PoolKey calldata key
     ) internal view returns (bool) {
@@ -378,6 +419,7 @@ contract OracleHook is BaseHook, Ownable {
         return false;
     }
 
+    /// @dev gets the current active tick for a pool
     function _getActiveTick(
         PoolId poolId
     ) internal view returns (int24 activeTick) {
