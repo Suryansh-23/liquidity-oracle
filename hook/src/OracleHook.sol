@@ -21,6 +21,7 @@ contract OracleHook is BaseHook, Ownable {
     using SignedMath for int256;
 
     error OracleHook__NotAuthorized();
+    error OracleHook__DataNotAvailable();
 
     struct PoolMetrics {
         uint256 liqTransition;
@@ -51,9 +52,9 @@ contract OracleHook is BaseHook, Ownable {
 
     address public serviceManger;
 
-    mapping(PoolId key => mapping(int24 => uint256)) private tickLiquidities;
-    mapping(PoolId key => PoolMetrics) private poolMetrics;
-    mapping(PoolId key => LocalRangeParams) private localRanges;
+    mapping(PoolId poolId => mapping(int24 => uint256)) private tickLiquidities;
+    mapping(PoolId poolId => PoolMetrics) private poolMetrics;
+    mapping(PoolId poolId => LocalRangeParams) private localRanges;
 
     constructor(
         IPoolManager _poolManager
@@ -310,6 +311,44 @@ contract OracleHook is BaseHook, Ownable {
         }
 
         localRanges[poolId] = localRange;
+    }
+
+    function getLiquidityTransition(
+        PoolId poolId
+    ) external view returns (uint256 liqTransition) {
+        liqTransition = poolMetrics[poolId].liqTransition;
+        if (liqTransition == 0) revert OracleHook__DataNotAvailable();
+    }
+
+    function getVolatility(
+        PoolId poolId
+    ) external view returns (uint256 volatility) {
+        volatility = poolMetrics[poolId].volatility;
+        if (volatility == 0) revert OracleHook__DataNotAvailable();
+    }
+
+    function getLiquidityTimeToLive(
+        PoolId poolId
+    ) external view returns (uint256 liqTimeToLive) {
+        liqTimeToLive = poolMetrics[poolId].liqTimeToLive;
+        if (liqTimeToLive == 0) revert OracleHook__DataNotAvailable();
+    }
+
+    function getDepth(PoolId poolId) external view returns (uint256 depth) {
+        depth = poolMetrics[poolId].depth;
+        if (depth == 0) revert OracleHook__DataNotAvailable();
+    }
+
+    function getSpread(PoolId poolId) external view returns (uint256 spread) {
+        spread = poolMetrics[poolId].spread;
+        if (spread == 0) revert OracleHook__DataNotAvailable();
+    }
+
+    function getLiquidityConcentration(
+        PoolId poolId
+    ) external view returns (uint256 liqConcentration) {
+        liqConcentration = poolMetrics[poolId].liqConcentration;
+        if (liqConcentration == 0) revert OracleHook__DataNotAvailable();
     }
 
     function _isThresholdReached(
