@@ -69,3 +69,9 @@ export interface VolatilityResult {
   temporal: number;
   aggregate: number;
 }
+
+export interface StructureMetricResults {
+  liquidityConcentration: number;
+  liquidityDepth: number;
+  liquiditySpread: number;
+}
