@@ -46,11 +46,10 @@ contract OracleHook is BaseHook, Ownable {
     uint256 constant BPS = 10_000;
     uint256 constant TICK_SHIFT_THRESHOLD = 1_000;
     uint256 constant LIQUIDITY_THRESHOLD = 1_000;
-
     int24 internal constant INITIAL_TICK_RANGE = 10_000;
-    uint256 TIME_THRESHOLD = 5 minutes;
+    uint256 internal constant TIME_THRESHOLD = 5 minutes;
 
-    address public serviceManger;
+    address public serviceManager;
 
     mapping(PoolId poolId => mapping(int24 => uint256)) private tickLiquidities;
     mapping(PoolId poolId => PoolMetrics) private poolMetrics;
@@ -61,7 +60,7 @@ contract OracleHook is BaseHook, Ownable {
     ) BaseHook(_poolManager) Ownable(msg.sender) {}
 
     function setServiceManager(address _serviceManager) external onlyOwner {
-        serviceManger = _serviceManager;
+        serviceManager = _serviceManager;
     }
 
     function updatePoolMetrics(
@@ -306,8 +305,9 @@ contract OracleHook is BaseHook, Ownable {
 
         for (int24 i = tickLower; i <= tickUpper; i += tickSpacing) {
             (liquidity, ) = poolManager.getTickLiquidity(poolId, i);
-            tickLiquidities[poolId][i] = liquidity;
+            localRange.totalLiquidity -= tickLiquidities[poolId][i];
             localRange.totalLiquidity += liquidity;
+            tickLiquidities[poolId][i] = liquidity;
         }
 
         localRanges[poolId] = localRange;
@@ -367,7 +367,8 @@ contract OracleHook is BaseHook, Ownable {
             TICK_SHIFT_THRESHOLD
         ) return true;
 
-        if (
+        if (localRange.lastSnapshotTotalLiquidity == 0) return true;
+        else if (
             ((int256(localRange.totalLiquidity) -
                 int256(localRange.lastSnapshotTotalLiquidity)).abs() * BPS) /
                 localRange.lastSnapshotTotalLiquidity >
