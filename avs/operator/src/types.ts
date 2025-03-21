@@ -1,3 +1,5 @@
+export const PRECISION = 4;
+
 export type Curve = [number, number][];
 
 export type Vector<L extends number> = { length: L } & [...[number, number][]];
@@ -35,14 +37,6 @@ export interface VolatilitySnapshot {
   transition?: number;
 }
 
-export interface VolatilityResult {
-  overall: number;
-  transition: number;
-  perTick: number;
-  entropy: number;
-  temporal: number;
-  aggregate: number;
-}
 export interface VolatilityScores {
   overall: number;
   transition: number;
@@ -51,10 +45,27 @@ export interface VolatilityScores {
   temporal: number;
 }
 
+export interface AggregateHistory {
+  rsdEMX: number;
+  rvEMX: number;
+  rangeEMX: number;
+  transitionEMX: number;
+  perTickEMX: number;
+}
+
 export interface VolatilityWeights {
   overall: number;
   transition: number;
   perTick: number;
   entropy: number;
   temporal: number;
+}
+
+export interface VolatilityResult {
+  overall: number;
+  transition: number;
+  perTick: number;
+  entropy: number;
+  temporal: number;
+  aggregate: number;
 }

@@ -1,10 +1,15 @@
-import { VolatilityWeights, VolatilityScores } from "../types";
+import {
+  AggregateHistory,
+  VolatilityScores,
+  VolatilityWeights,
+} from "../types";
+import { toPrecision } from "../utils";
 
 const DEFAULT_WEIGHTS: Required<VolatilityWeights> = {
-  overall: 0.3,
+  overall: 0.35,
   transition: 0.25,
   perTick: 0.2,
-  entropy: 0.15,
+  entropy: 0.1,
   temporal: 0.1,
 };
 
@@ -24,13 +29,6 @@ const aggregateVolatility = (
     scores.temporal,
   ];
 
-  // Normalize components to [0,1] range
-  const minVal = Math.min(...components);
-  const maxVal = Math.max(...components);
-  const normalized = components.map(
-    (val) => (val - minVal) / (maxVal - minVal + 1e-9)
-  );
-
   // Get weights with defaults
   const finalWeights = [
     weights.overall,
@@ -41,10 +39,8 @@ const aggregateVolatility = (
   ];
 
   // Calculate weighted sum
-  return Number(
-    normalized
-      .reduce((sum, comp, i) => sum + comp * finalWeights[i], 0)
-      .toFixed(2)
+  return toPrecision(
+    components.reduce((sum, comp, i) => sum + comp * finalWeights[i], 0)
   );
 };
 

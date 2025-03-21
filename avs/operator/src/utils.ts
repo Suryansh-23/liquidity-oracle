@@ -1,4 +1,4 @@
-import { Curve, Vector, VectorPair } from "./types";
+import { Curve, PRECISION, Vector, VectorPair } from "./types";
 
 export const distributionToCurve = (
   distribution: number[],
@@ -68,4 +68,8 @@ export const sumNormalize = (
   }
 
   return v.map(([x, y]) => [x, y / sum]);
+};
+
+export const toPrecision = (n: number): number => {
+  return Number(n.toFixed(PRECISION));
 };

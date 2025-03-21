@@ -1,12 +1,13 @@
 import { VolatilitySnapshot } from "../types";
 
+const LAMBDA = 0.9;
+
 /**
  * Transition Volatility Component: Standard deviation of transition metrics using EWMA
  */
 const transitionVolatility = (
   snapshots: VolatilitySnapshot[],
-  prevVol: number,
-  lambda: number = 0.9
+  prevVol: number
 ): number => {
   if (snapshots.length < 3) {
     return 0;
@@ -19,8 +20,8 @@ const transitionVolatility = (
     const len = transitionMetrics.length;
 
     return Math.sqrt(
-      lambda * Math.pow(prevVol, 2) +
-        (1 - lambda) *
+      LAMBDA * Math.pow(prevVol, 2) +
+        (1 - LAMBDA) *
           Math.pow(transitionMetrics[len - 1] - transitionMetrics[len - 2], 2)
     );
   }

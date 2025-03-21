@@ -1,25 +1,35 @@
 import computeTransitionDelta from "../transitionMetrics";
 import {
+  AggregateHistory,
   Curve,
   VolatilityResult,
   VolatilityScores,
   VolatilitySnapshot,
 } from "../types";
-import { curveToVectorPair } from "../utils";
+import { curveToVectorPair, toPrecision } from "../utils";
 import aggregateVolatility from "./aggregateVolatility";
 
 import entropyVolatility from "./entropyVolatility";
+import ewmx from "./normalize";
 import overallVolatility from "./overallVolatility";
 import perTickVolatility from "./perTickVolatility";
 import temporalDependence from "./temporalVolatility";
 import transitionVolatility from "./transitionVolatility";
 
 export default class Volatility {
+  private maxSize: number;
+  private snapshotSize: number;
   private latestDistribution: Curve = [];
   private window: VolatilitySnapshot[] = [];
   private prevTransitionVol: number = 0;
-  private maxSize: number;
-  private snapshotSize: number;
+
+  private aggHistory: AggregateHistory = {
+    rsdEMX: 0,
+    rvEMX: 0,
+    rangeEMX: 0,
+    transitionEMX: 0,
+    perTickEMX: 0,
+  };
 
   constructor(maxSize: number, snapshotSize: number) {
     this.maxSize = maxSize;
@@ -59,23 +69,40 @@ export default class Volatility {
    * Compute all scores and return both individual and aggregated results
    */
   private compute(): VolatilityResult {
-    const overall = overallVolatility(this.window);
-    const transition = transitionVolatility(
+    const { overallVolatility: overall, ...emx } = overallVolatility(
       this.window,
-      this.prevTransitionVol
+      this.aggHistory
     );
-    const perTick = perTickVolatility(this.window, this.snapshotSize);
-    const entropy = entropyVolatility(this.window);
-    const temporal = temporalDependence(this.window);
 
+    const [transition, transitionEMX] = ewmx(
+      transitionVolatility(this.window, this.prevTransitionVol),
+      this.aggHistory.transitionEMX
+    );
     this.prevTransitionVol = transition;
 
+    const [perTick, perTickEMX] = ewmx(
+      perTickVolatility(this.window, this.snapshotSize),
+      this.aggHistory.perTickEMX
+    );
+
+    const entropy = toPrecision(
+      entropyVolatility(this.window) / Math.log(this.snapshotSize)
+    );
+
+    const temporal = temporalDependence(this.window);
+
     const scores: VolatilityScores = {
-      overall,
-      transition,
-      perTick,
-      entropy,
-      temporal,
+      overall: toPrecision(overall),
+      transition: toPrecision(transition),
+      perTick: toPrecision(perTick),
+      entropy: toPrecision(entropy),
+      temporal: toPrecision(temporal),
+    };
+
+    this.aggHistory = {
+      ...emx,
+      transitionEMX,
+      perTickEMX,
     };
 
     return {

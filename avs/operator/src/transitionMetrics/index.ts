@@ -1,7 +1,8 @@
 import { VectorPair } from "../types";
-import wassersteinDistance from "./wasserstein";
-import hellingerDistance from "./hellinger";
+import { toPrecision } from "../utils";
 import cosine from "./cosine";
+import hellingerDistance from "./hellinger";
+import wassersteinDistance from "./wasserstein";
 
 /**
  * Configuration for the composite metric weights and parameters
@@ -99,12 +100,10 @@ const computeTransitionDelta = (
   const cosineDist = cosineToDistance(cosine(vp));
 
   // Combine metrics using weighted sum
-  return Number(
-    (
-      wassersteinWeight * wassersteinDist +
+  return toPrecision(
+    wassersteinWeight * wassersteinDist +
       hellingerWeight * hellingerDist +
       cosineWeight * cosineDist
-    ).toFixed(2)
   );
 };
 
