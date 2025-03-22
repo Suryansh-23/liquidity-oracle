@@ -115,10 +115,17 @@ async function main() {
         continue;
       }
 
+      if (res.nextBlock % 1000 === 0) {
+        // Also log current counts during processing
+        console.log(`Processed up to block ${res.nextBlock}`);
+        console.log(
+          `Current SwapEvents: ${swapEventCount}, ModifyLiquidityEvents: ${modifyLiquidityEventCount}`
+        );
+        dbManager.printDatabaseStats();
+      }
+
       res.data.forEach((event) => {
-        console.log(`Processing block ${res.nextBlock}...`);
         const { topics, data } = event.log;
-        console.log("Event topics:", topics);
 
         const topic0 = topics[0];
         const timestamp =
@@ -138,18 +145,7 @@ async function main() {
             return;
           }
 
-          if (
-            topic0 !==
-            "0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f"
-          ) {
-            return;
-          }
-
           try {
-            console.log(
-              "Event Topics: ",
-              topics as [`0x${string}`, ...`0x${string}`[]]
-            );
             const { eventName, args: decoded } = decodeEventLog({
               abi,
               topics: topics as [`0x${string}`, ...`0x${string}`[]],
@@ -196,15 +192,15 @@ async function main() {
                   timestamp,
                   blockNumber
                 );
-                console.log(
-                  "ModifyLiquidityEvent inserted:",
-                  modifyLiquidityEvent
-                );
+                // console.log(
+                //   "ModifyLiquidityEvent inserted:",
+                //   modifyLiquidityEvent
+                // );
                 modifyLiquidityEventCount++;
                 break;
-              default:
-                console.error("Unknown event name:", eventName);
-                return;
+              //   default:
+              //     console.error("Unknown event name:", eventName);
+              //     return;
             }
           } catch (error) {
             console.error("Error decoding log:", error);
@@ -218,15 +214,6 @@ async function main() {
           }
         }
       });
-
-      if (res.nextBlock % 1000 === 0) {
-        // Also log current counts during processing
-        console.log(`Processed up to block ${res.nextBlock}`);
-        console.log(
-          `Current SwapEvents: ${swapEventCount}, ModifyLiquidityEvents: ${modifyLiquidityEventCount}`
-        );
-        dbManager.printDatabaseStats();
-      }
     }
   } catch (error) {
     console.error("Error in main function:", error);
