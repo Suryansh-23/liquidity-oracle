@@ -1,0 +1,23 @@
+{
+  "name": "indexer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsc && node dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.11",
+    "dotenv": "^16.4.7",
+    "typescript": "^5.8.2"
+  },
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "description": "",
+  "dependencies": {
+    "@envio-dev/hypersync-client": "^0.6.3",
+    "@types/better-sqlite3": "^7.6.12",
+    "better-sqlite3": "^11.9.1",
+    "viem": "^2.23.13"
+  }
+}
