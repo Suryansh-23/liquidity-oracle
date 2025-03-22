@@ -4,7 +4,6 @@ export interface ModifyLiquidityEvent {
   tickLower: BigInt;
   tickUpper: BigInt;
   liquidityDelta: string;
-  salt: string;
 }
 
 export interface SwapEvent {

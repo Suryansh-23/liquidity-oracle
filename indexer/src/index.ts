@@ -1,10 +1,13 @@
 import {
+  BlockField,
   Decoder,
   HypersyncClient,
   JoinMode,
   LogField,
+  Query,
 } from "@envio-dev/hypersync-client";
 import { config } from "dotenv";
+import path from "path";
 import {
   Abi,
   decodeEventLog,
@@ -15,14 +18,28 @@ import {
   toHex,
 } from "viem";
 import { EVENT_SIGNATURES } from "./constant";
-import { stringify } from "./utils";
-import { ModifyLiquidityEvent } from "./types";
+import { DatabaseManager } from "./db";
+import { ModifyLiquidityEvent, SwapEvent } from "./types";
 
 // Load environment variables from .env file
 config();
 
 async function main() {
   console.info(`Starting indexer on ${process.env.NETWORK_NAME}...`);
+  console.info(
+    `Searching for events in ${process.env.POOL_MANAGER_ADDRESS}...`
+  );
+
+  // Initialize counters for events
+  let swapEventCount = 0;
+  let modifyLiquidityEventCount = 0;
+
+  // Initialize database
+  const dbPath = path.join(
+    __dirname,
+    `../data/${process.env.NETWORK_NAME || "event"}.db`
+  );
+  const dbManager = new DatabaseManager(dbPath);
 
   const client = HypersyncClient.new({
     url: `https://${process.env.NETWORK_NAME}.hypersync.xyz`,
@@ -40,33 +57,31 @@ async function main() {
   EVENT_SIGNATURES.forEach((sig) => {
     const topic0 = keccak256(toHex(toEventSignature(sig)));
     const abi = parseAbi([sig]);
-
     topic0ToAbi.set(topic0, abi);
   });
 
-  // a mapping for pool address to event data
-  const perPoolEventMapping = new Map<string, Map<string, unknown[]>>();
-
   // Define the Hypersync query to get events we're interested in
-  let query = {
+  let query: Query = {
     fromBlock: 0,
     logs: [
       {
-        // Get all events that have any of the topic0 values we want
+        address: [process.env.POOL_MANAGER_ADDRESS || ""],
         topics: [topic0_list],
       },
     ],
     fieldSelection: {
       log: [
+        LogField.TransactionHash,
         LogField.Data,
         LogField.Address,
         LogField.Topic0,
         LogField.Topic1,
         LogField.Topic2,
-        LogField.Topic3,
+        LogField.BlockNumber,
       ],
+      block: [BlockField.Timestamp],
     },
-    joinMode: JoinMode.Default,
+    joinMode: JoinMode.JoinNothing,
   };
 
   try {
@@ -83,6 +98,15 @@ async function main() {
       const res = await stream.recv();
       if (!res) {
         console.log("✓ Reached tip of the chain");
+        // Log the final event counts
+        console.log("\nEvent Processing Summary:");
+        console.log(`SwapEvents processed: ${swapEventCount}`);
+        console.log(
+          `ModifyLiquidityEvents processed: ${modifyLiquidityEventCount}`
+        );
+
+        // Print database statistics at the end
+        dbManager.printDatabaseStats();
         break;
       }
 
@@ -92,16 +116,18 @@ async function main() {
       }
 
       res.data.forEach((event) => {
+        console.log(`Processing block ${res.nextBlock}...`);
         const { topics, data } = event.log;
+        console.log("Event topics:", topics);
+
         const topic0 = topics[0];
+        const timestamp =
+          event.block?.timestamp || Math.floor(Date.now() / 1000);
+        const blockNumber = event.log.blockNumber || 0;
+        const txnHash = event.log.transactionHash || "";
 
-        if (!topic0) {
-          console.error("Log has no topic0:", event.log);
-          return;
-        }
-
-        if (!data) {
-          console.error("Log has no data:", event.log);
+        if (!topic0 || !data) {
+          console.error("Invalid log data:", event.log);
           return;
         }
 
@@ -112,46 +138,115 @@ async function main() {
             return;
           }
 
+          if (
+            topic0 !==
+            "0x40e9cecb9f5f1f1c5b9c97dec2917b7ee92e57ba5563708daca94dd84ad7112f"
+          ) {
+            return;
+          }
+
           try {
+            console.log(
+              "Event Topics: ",
+              topics as [`0x${string}`, ...`0x${string}`[]]
+            );
             const { eventName, args: decoded } = decodeEventLog({
               abi,
-              topics: event.log.topics as [`0x${string}`, ...`0x${string}`[]],
-              data: (event.log.data as Hex) || "0x",
+              topics: topics as [`0x${string}`, ...`0x${string}`[]],
+              data: (data as Hex) || "0x",
+              //   strict: false,
             });
-            if (!eventName) {
-              console.error("Event name is null or undefined");
-              return;
-            }
 
-            if (!decoded) {
-              console.error("Decoded event is null or undefined");
+            if (!eventName || !decoded) {
+              console.error("Failed to decode event");
               return;
             }
 
             switch (eventName) {
               case "Swap":
+                const swapEvent: SwapEvent = {
+                  id: (decoded as any).id,
+                  sender: (decoded as any).sender,
+                  amount0: (decoded as any).amount0.toString(),
+                  amount1: (decoded as any).amount1.toString(),
+                  sqrtPriceX96: (decoded as any).sqrtPriceX96.toString(),
+                  liquidity: (decoded as any).liquidity.toString(),
+                  tick: BigInt((decoded as any).tick.toString()),
+                  fee: BigInt((decoded as any).fee.toString()),
+                };
+                dbManager.insertSwapEvent(
+                  swapEvent,
+                  txnHash,
+                  timestamp,
+                  blockNumber
+                );
+                swapEventCount++;
                 break;
               case "ModifyLiquidity":
-                const params = decoded as unknown as ModifyLiquidityEvent;
+                const modifyLiquidityEvent: ModifyLiquidityEvent = {
+                  id: (decoded as any).id,
+                  sender: (decoded as any).sender,
+                  tickLower: BigInt((decoded as any).tickLower.toString()),
+                  tickUpper: BigInt((decoded as any).tickUpper.toString()),
+                  liquidityDelta: (decoded as any).liquidityDelta.toString(),
+                };
+                dbManager.insertModifyLiquidityEvent(
+                  modifyLiquidityEvent,
+                  txnHash,
+                  timestamp,
+                  blockNumber
+                );
+                console.log(
+                  "ModifyLiquidityEvent inserted:",
+                  modifyLiquidityEvent
+                );
+                modifyLiquidityEventCount++;
                 break;
+              default:
+                console.error("Unknown event name:", eventName);
+                return;
             }
-
-            // console.log(
-            //   `Decoded event: ${eventName}, args: ${stringify(decoded)}`,
-            //   `from address: ${event.log.address}`
-            // );
           } catch (error) {
             console.error("Error decoding log:", error);
+            console.error("Raw event data:", {
+              topics,
+              data,
+              blockNumber,
+              timestamp,
+            });
             return;
           }
-        } else {
-          console.error("No ABI found for topic0:", topic0);
         }
       });
+
+      if (res.nextBlock % 1000 === 0) {
+        // Also log current counts during processing
+        console.log(`Processed up to block ${res.nextBlock}`);
+        console.log(
+          `Current SwapEvents: ${swapEventCount}, ModifyLiquidityEvents: ${modifyLiquidityEventCount}`
+        );
+        dbManager.printDatabaseStats();
+      }
     }
   } catch (error) {
     console.error("Error in main function:", error);
+    // Log counts even if there's an error
+    console.log("\nEvent Processing Summary (before error):");
+    console.log(`SwapEvents processed: ${swapEventCount}`);
+    console.log(
+      `ModifyLiquidityEvents processed: ${modifyLiquidityEventCount}`
+    );
+  } finally {
+    dbManager.close();
   }
+}
+
+// Ensure the data directory exists
+import { mkdirSync } from "fs";
+try {
+  mkdirSync(path.join(__dirname, "../data"), { recursive: true });
+} catch (error) {
+  console.error("Error creating data directory:", error);
 }
 
 main();
