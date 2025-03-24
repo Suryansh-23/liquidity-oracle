@@ -36,24 +36,24 @@ contract OracleHook is BaseHook, Ownable {
         int24 tickLower;
         int24 tickUpper;
         int24 lastActiveTick;
-        uint256 totalLiquidity;
-        uint256 lastSnapshotTotalLiquidity;
+        int256 totalLiquidity;
+        int256 lastSnapshotTotalLiquidity;
         uint256 lastUpdateTimestamp;
     }
 
     // TODO: change config
 
     uint256 constant BPS = 10_000;
-    uint256 constant TICK_SHIFT_THRESHOLD = 1_000;
-    uint256 constant LIQUIDITY_THRESHOLD = 1_000;
-    int24 internal constant INITIAL_TICK_RANGE = 10_000;
-    uint256 internal constant TIME_THRESHOLD = 5 minutes;
+    uint256 constant TICK_SHIFT_THRESHOLD = 100;
+    uint256 constant LIQUIDITY_THRESHOLD = 100;
+    uint256 constant TIME_THRESHOLD = 5 minutes;
+    int24 constant TICK_RANGE_OFFSET = 1_000;
 
     address public serviceManager;
 
-    mapping(PoolId poolId => mapping(int24 => uint256)) private tickLiquidities;
-    mapping(PoolId poolId => PoolMetrics) private poolMetrics;
-    mapping(PoolId poolId => LocalRangeParams) private localRanges;
+    mapping(PoolId poolId => mapping(int24 => int256)) public tickLiquidities;
+    mapping(PoolId poolId => PoolMetrics) public poolMetrics;
+    mapping(PoolId poolId => LocalRangeParams) public localRanges;
 
     constructor(
         IPoolManager _poolManager
@@ -115,9 +115,9 @@ contract OracleHook is BaseHook, Ownable {
     ) internal override returns (bytes4) {
         int24 tickSpacing = key.tickSpacing;
 
-        int24 tickLower = ((tick - INITIAL_TICK_RANGE) / tickSpacing) *
+        int24 tickLower = ((tick - TICK_RANGE_OFFSET) / tickSpacing) *
             tickSpacing;
-        int24 tickUpper = ((tick + INITIAL_TICK_RANGE) / tickSpacing) *
+        int24 tickUpper = ((tick + TICK_RANGE_OFFSET) / tickSpacing) *
             tickSpacing;
 
         if (tickLower < TickMath.MIN_TICK)
@@ -201,10 +201,13 @@ contract OracleHook is BaseHook, Ownable {
 
         int24 activeTick = _getActiveTick(key.toId());
 
-        if (activeTick != localRange.lastActiveTick) {
-            int24 tickLower = ((activeTick - INITIAL_TICK_RANGE) /
+        if (
+            (activeTick / key.tickSpacing) * key.tickSpacing !=
+            (localRange.lastActiveTick / key.tickSpacing) * key.tickSpacing
+        ) {
+            int24 tickLower = ((activeTick - TICK_RANGE_OFFSET) /
                 key.tickSpacing) * key.tickSpacing;
-            int24 tickUpper = ((activeTick + INITIAL_TICK_RANGE) /
+            int24 tickUpper = ((activeTick + TICK_RANGE_OFFSET) /
                 key.tickSpacing) * key.tickSpacing;
 
             _updateLocalRangeParams(key, tickLower, tickUpper);
@@ -236,7 +239,7 @@ contract OracleHook is BaseHook, Ownable {
 
         int24 length = (tickUpper - tickLower) / tickSpacing + 1;
 
-        uint256[] memory liquidities = new uint256[](uint24(length));
+        int256[] memory liquidities = new int256[](uint24(length));
 
         for (int24 i; i < length; ++i) {
             liquidities[uint24(i)] = tickLiquidities[poolId][
@@ -248,8 +251,9 @@ contract OracleHook is BaseHook, Ownable {
             PoolId.unwrap(poolId),
             tickLower,
             tickUpper,
-            INITIAL_TICK_RANGE,
+            TICK_RANGE_OFFSET,
             activeTick,
+            key.tickSpacing,
             liquidities
         );
     }
@@ -304,11 +308,11 @@ contract OracleHook is BaseHook, Ownable {
         PoolKey calldata key,
         int24 tickLower,
         int24 tickUpper
-    ) internal returns (uint256) {
+    ) internal returns (int256) {
         PoolId poolId = key.toId();
 
-        uint256 liquidity;
-        uint256 totalLiquidity;
+        int256 liquidity;
+        int256 totalLiquidity;
 
         for (int24 i = tickLower; i <= tickUpper; i += key.tickSpacing) {
             liquidity = tickLiquidities[poolId][i];
@@ -335,12 +339,12 @@ contract OracleHook is BaseHook, Ownable {
 
         LocalRangeParams memory localRange = localRanges[poolId];
 
-        uint128 liquidity;
+        int128 liquidity;
 
         for (int24 i = tickLower; i <= tickUpper; i += tickSpacing) {
-            (liquidity, ) = poolManager.getTickLiquidity(poolId, i);
-            localRange.totalLiquidity -= tickLiquidities[poolId][i];
+            (, liquidity) = poolManager.getTickLiquidity(poolId, i);
             localRange.totalLiquidity += liquidity;
+            localRange.totalLiquidity -= tickLiquidities[poolId][i];
             tickLiquidities[poolId][i] = liquidity;
         }
 
@@ -404,17 +408,19 @@ contract OracleHook is BaseHook, Ownable {
 
         if (
             (int256(activeTick - localRange.lastActiveTick).abs() * BPS) /
-                uint256(int256(2 * INITIAL_TICK_RANGE + 1)) >
+                uint256(int256(2 * TICK_RANGE_OFFSET + 1)) >
             TICK_SHIFT_THRESHOLD
         ) return true;
 
-        if (localRange.lastSnapshotTotalLiquidity == 0) return true;
-        else if (
-            ((int256(localRange.totalLiquidity) -
-                int256(localRange.lastSnapshotTotalLiquidity)).abs() * BPS) /
-                localRange.lastSnapshotTotalLiquidity >
-            LIQUIDITY_THRESHOLD
-        ) return true;
+        // TODO add liquidity change as a threshold
+
+        //if (localRange.lastSnapshotTotalLiquidity == 0) return true;
+        //else if (
+        //    ((int256(localRange.totalLiquidity) -
+        //        int256(localRange.lastSnapshotTotalLiquidity)).abs() * BPS) /
+        //        localRange.lastSnapshotTotalLiquidity.abs() >
+        //    LIQUIDITY_THRESHOLD
+        //) return true;
 
         return false;
     }
