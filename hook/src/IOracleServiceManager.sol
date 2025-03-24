@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.26;
 
 interface IOracleServiceManager {
     function createNewTask(
@@ -8,6 +8,7 @@ interface IOracleServiceManager {
         int24 tickUpper,
         int24 localRangeOffset,
         int24 activeTick,
-        uint256[] memory
+        int24 tickSpacing,
+        int256[] memory
     ) external;
 }

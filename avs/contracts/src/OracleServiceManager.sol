@@ -25,7 +25,8 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         int24 tickUpper;
         int24 localRangeOffset;
         int24 activeTick;
-        uint256[] tickLiquidities;
+        int24 tickSpacing;
+        int256[] tickLiquidities;
     }
 
     address public hook;
@@ -59,7 +60,8 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         int24 tickUpper,
         int24 localRangeOffset,
         int24 activeTick,
-        uint256[] memory tickLiquidities
+        int24 tickSpacing,
+        int256[] memory tickLiquidities
     ) external {
         if (msg.sender != hook) revert OracleServiceManager__OnlyHook();
 
@@ -69,6 +71,7 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
             tickUpper: tickUpper,
             localRangeOffset: localRangeOffset,
             activeTick: activeTick,
+            tickSpacing: tickSpacing,
             tickLiquidities: tickLiquidities
         });
 
