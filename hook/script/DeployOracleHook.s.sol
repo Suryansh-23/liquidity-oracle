@@ -16,13 +16,12 @@ import {TickMath} from "v4-core/libraries/TickMath.sol";
 import {Deployers} from "@uniswap/v4-core/test/utils/Deployers.sol";
 
 import {OracleHook} from "../src/OracleHook.sol";
-import {HookMiner} from "../test/utils/HookMiner.sol";
+import {HookMiner} from "./utils/HookMiner.sol";
 
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
-import {StdCheats} from "forge-std/StdCheats.sol";
 
-contract DeployOracleHook is Script, StdCheats {
+contract DeployOracleHook is Script {
     using CurrencyLibrary for Currency;
 
     IPoolManager manager;
@@ -34,7 +33,7 @@ contract DeployOracleHook is Script, StdCheats {
     Currency token1;
 
     OracleHook hook;
-    uint160 constant SQRT_PRICE = 79228162514264337593543950336;
+    uint160 constant SQRT_PRICE_1_1 = 79228162514264337593543950336;
 
     function run() external {
         vm.createSelectFork("http://localhost:8545");
@@ -54,64 +53,15 @@ contract DeployOracleHook is Script, StdCheats {
             hooks: IHooks(hook)
         });
 
-        manager.initialize(poolKey, SQRT_PRICE);
+        manager.initialize(poolKey, SQRT_PRICE_1_1);
 
         vm.stopBroadcast();
 
-        // WRITE JSON DATA
-        string memory parent_object = "parent object";
-        string memory deployed_addresses = "addresses";
-        vm.serializeAddress(
-            deployed_addresses,
-            "poolManager",
-            address(manager)
-        );
-        vm.serializeAddress(deployed_addresses, "quoter", address(quoter));
-        vm.serializeAddress(deployed_addresses, "lpRouter", address(lpRouter));
-        vm.serializeAddress(
-            deployed_addresses,
-            "swapRouter",
-            address(swapRouter)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "token0",
-            Currency.unwrap(token0)
-        );
-        vm.serializeAddress(
-            deployed_addresses,
-            "token1",
-            Currency.unwrap(token1)
-        );
-
-        string memory deployed_addresses_output = vm.serializeAddress(
-            deployed_addresses,
-            "hook",
-            address(hook)
-        );
-
-        string memory final_json = vm.serializeString(
-            parent_object,
-            deployed_addresses,
-            deployed_addresses_output
-        );
-        string memory outputDir = string.concat(
-            vm.projectRoot(),
-            "/script/output/"
-        );
-        string memory chainDir = string.concat(vm.toString(block.chainid), "/");
-        string memory outputFilePath = string.concat(
-            outputDir,
-            chainDir,
-            "oracle_hook_deployment_output",
-            ".json"
-        );
-        //vm.writeJson(final_json, outputFilePath);
+        console.log("Oracle Hook deployed at:", address(hook));
     }
 
     function deployFreshManagerAndRouters() internal {
         manager = IPoolManager(address(new PoolManager(msg.sender)));
-
         lpRouter = new PoolModifyLiquidityTest(manager);
         swapRouter = new PoolSwapTest(manager);
     }
