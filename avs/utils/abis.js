@@ -9,7 +9,7 @@ const contractsToExtract = [
   'IAVSDirectory',
   'IDelegationManager',
   'ECDSAStakeRegistry',
-  'HelloWorldServiceManager'
+  'OracleServiceManager'
 ];
 
 if (!fs.existsSync(abiDir)) {

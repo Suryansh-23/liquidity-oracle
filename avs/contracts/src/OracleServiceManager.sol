@@ -54,6 +54,13 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         hook = _hook;
     }
 
+    function initialize(
+        address initialOwner,
+        address _rewardsInitiator
+    ) external initializer {
+        __ServiceManagerBase_init(initialOwner, _rewardsInitiator);
+    }
+
     function createNewTask(
         bytes32 poolId,
         int24 tickLower,
