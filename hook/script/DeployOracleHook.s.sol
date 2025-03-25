@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
 import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
+import {IHooks} from "v4-core/interfaces/IHooks.sol";
 import {PoolManager} from "v4-core/PoolManager.sol";
 import {PoolModifyLiquidityTest} from "v4-core/test/PoolModifyLiquidityTest.sol";
 import {PoolSwapTest} from "v4-core/test/PoolSwapTest.sol";
@@ -50,7 +51,7 @@ contract DeployOracleHook is Script, StdCheats {
             currency1: token1,
             fee: 500,
             tickSpacing: 10,
-            hooks: hook
+            hooks: IHooks(hook)
         });
 
         manager.initialize(poolKey, SQRT_PRICE);
@@ -105,7 +106,7 @@ contract DeployOracleHook is Script, StdCheats {
             "oracle_hook_deployment_output",
             ".json"
         );
-        vm.writeJson(final_json, outputFilePath);
+        //vm.writeJson(final_json, outputFilePath);
     }
 
     function deployFreshManagerAndRouters() internal {
@@ -138,8 +139,9 @@ contract DeployOracleHook is Script, StdCheats {
     function deployHookToAnvil() internal {
         uint160 flags = uint160(
             Hooks.AFTER_INITIALIZE_FLAG |
-                Hooks.BEFORE_SWAP_FLAG |
-                Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
+                Hooks.AFTER_SWAP_FLAG |
+                Hooks.AFTER_ADD_LIQUIDITY_FLAG |
+                Hooks.AFTER_REMOVE_LIQUIDITY_FLAG
         );
         (address hookAddress, bytes32 salt) = HookMiner.find(
             CREATE2_FACTORY,
