@@ -5,7 +5,6 @@ interface IOracleHook {
     struct PoolMetrics {
         uint256 liqTransition;
         uint256 volatility;
-        uint256 liqTimeToLive;
         uint256 depth;
         uint256 spread;
         uint256 liqConcentration;
