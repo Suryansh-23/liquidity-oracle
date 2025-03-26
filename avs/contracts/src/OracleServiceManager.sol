@@ -3,12 +3,8 @@ pragma solidity ^0.8.9;
 
 import {ECDSAServiceManagerBase} from "@eigenlayer-middleware/src/unaudited/ECDSAServiceManagerBase.sol";
 import {ECDSAStakeRegistry} from "@eigenlayer-middleware/src/unaudited/ECDSAStakeRegistry.sol";
-import {IServiceManager} from "@eigenlayer-middleware/src/interfaces/IServiceManager.sol";
 import {ECDSAUpgradeable} from "@openzeppelin-upgrades/contracts/utils/cryptography/ECDSAUpgradeable.sol";
 import {IERC1271Upgradeable} from "@openzeppelin-upgrades/contracts/interfaces/IERC1271Upgradeable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@eigenlayer/contracts/interfaces/IRewardsCoordinator.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IOracleHook} from "./IOracleHook.sol";
 
 contract OracleServiceManager is ECDSAServiceManagerBase {
@@ -27,9 +23,8 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         bytes32 poolId;
         int24 tickLower;
         int24 tickUpper;
-        int24 tickSpacing;
         int24 activeTick;
-        uint256[] tickLiquidities;
+        int24 tickSpacing;
     }
 
     address public hook;
@@ -57,13 +52,19 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         hook = _hook;
     }
 
+    function initialize(
+        address initialOwner,
+        address _rewardsInitiator
+    ) external initializer {
+        __ServiceManagerBase_init(initialOwner, _rewardsInitiator);
+    }
+
     function createNewTask(
         bytes32 poolId,
         int24 tickLower,
         int24 tickUpper,
-        int24 tickSpacing,
         int24 activeTick,
-        uint256[] memory tickLiquidities
+        int24 tickSpacing
     ) external {
         if (msg.sender != hook) revert OracleServiceManager__OnlyHook();
 
@@ -71,9 +72,8 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
             poolId: poolId,
             tickLower: tickLower,
             tickUpper: tickUpper,
-            tickSpacing: tickSpacing,
             activeTick: activeTick,
-            tickLiquidities: tickLiquidities
+            tickSpacing: tickSpacing
         });
 
         allTaskHashes[latestTaskNum] = keccak256(abi.encode(task));

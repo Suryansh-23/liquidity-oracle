@@ -23,9 +23,9 @@ deploy-eigenlayer-contracts:
 	@chmod +x ./contracts/anvil/deploy-el.sh
 	./contracts/anvil/deploy-el.sh
 
-deploy-helloworld-contracts:
-	@chmod +x ./contracts/anvil/deploy-helloworld.sh
-	./contracts/anvil/deploy-helloworld.sh
+deploy-oracle-contracts:
+	@chmod +x ./contracts/anvil/deploy-oracle.sh
+	./contracts/anvil/deploy-oracle.sh $(hook_address)
 
 generate-bindings:
 	cd contracts && forge build --force --skip test --skip script
@@ -33,7 +33,7 @@ generate-bindings:
 	forge bind --alloy --skip-build --overwrite --module \
 		--root contracts/  \
 		--bindings-path ${RUST_BINDINGS_PATH} \
-		--select '^ECDSAStakeRegistry$$' --select '^HelloWorldServiceManager$$'
+		--select '^ECDSAStakeRegistry$$' --select '^OracleServiceManager$$'
 
 __CLI__: ##
 
