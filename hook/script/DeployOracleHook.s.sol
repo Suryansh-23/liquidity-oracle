@@ -12,8 +12,7 @@ import {PoolKey} from "v4-core/types/PoolKey.sol";
 import {Currency, CurrencyLibrary} from "v4-core/types/Currency.sol";
 import {V4Quoter} from "v4-periphery/src/lens/V4Quoter.sol";
 import {TickMath} from "v4-core/libraries/TickMath.sol";
-
-import {Deployers} from "@uniswap/v4-core/test/utils/Deployers.sol";
+import {StateView} from "v4-periphery/src/lens/StateView.sol";
 
 import {OracleHook} from "../src/OracleHook.sol";
 import {HookMiner} from "./utils/HookMiner.sol";
@@ -24,22 +23,24 @@ import {console} from "forge-std/console.sol";
 contract DeployOracleHook is Script {
     using CurrencyLibrary for Currency;
 
+    uint160 constant SQRT_PRICE_1_1 = 79228162514264337593543950336;
+
     IPoolManager manager;
     PoolModifyLiquidityTest lpRouter;
     PoolSwapTest swapRouter;
+    StateView stateView;
     V4Quoter quoter;
 
     Currency token0;
     Currency token1;
 
     OracleHook hook;
-    uint160 constant SQRT_PRICE_1_1 = 79228162514264337593543950336;
 
     function run() external {
         vm.createSelectFork("http://localhost:8545");
 
         vm.startBroadcast();
-        deployFreshManagerAndRouters();
+        deployV4Contracts();
         quoter = new V4Quoter(manager);
         deployMintAndApproveCurrencies();
 
@@ -58,12 +59,17 @@ contract DeployOracleHook is Script {
         vm.stopBroadcast();
 
         console.log("Oracle Hook deployed at:", address(hook));
+        console.log("Pool Manager deployed at:", address(manager));
+        console.log("Liquidity Router deployed at:", address(lpRouter));
+        console.log("Swap Router deployed at:", address(swapRouter));
+        console.log("State View deployed at:", address(stateView));
     }
 
-    function deployFreshManagerAndRouters() internal {
+    function deployV4Contracts() internal {
         manager = IPoolManager(address(new PoolManager(msg.sender)));
         lpRouter = new PoolModifyLiquidityTest(manager);
         swapRouter = new PoolSwapTest(manager);
+        stateView = new StateView(manager);
     }
 
     function deployMintAndApproveCurrencies() internal {
