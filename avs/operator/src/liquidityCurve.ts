@@ -9,6 +9,7 @@ import {
 } from "viem";
 import { anvil } from "viem/chains";
 import { Vector } from "./types";
+import { MAX_TICK, MIN_TICK } from "./utils";
 
 interface TickLiquidity {
   liquidityGross: JSBI; // uint128
@@ -28,9 +29,6 @@ class LiquidityCurve {
   stateViewAddress: Hex;
   client: PublicClient;
   abi: any;
-
-  MIN_TICK = -887272;
-  MAX_TICK = 887272;
 
   constructor(stateViewAddress: string) {
     if (!isHex(stateViewAddress)) {
@@ -63,8 +61,8 @@ class LiquidityCurve {
     tickSpacing: number
   ): Promise<Vector<number>> {
     const ticks = Array.from(
-      { length: Math.trunc((this.MAX_TICK - this.MIN_TICK) / tickSpacing + 1) },
-      (_, i) => this.MIN_TICK + i * tickSpacing
+      { length: Math.trunc((MAX_TICK - MIN_TICK) / tickSpacing + 1) },
+      (_, i) => MIN_TICK + i * tickSpacing
     );
 
     const [res, poolLiquidity] = await Promise.all([
@@ -84,7 +82,7 @@ class LiquidityCurve {
       currentTick,
       tickSpacing,
       res.map((tick, i) => ({
-        tickIdx: this.MIN_TICK + i * tickSpacing,
+        tickIdx: MIN_TICK + i * tickSpacing,
         liquidityGross: tick.liquidityGross,
         liquidityNet: tick.liquidityNet,
       })),
@@ -92,7 +90,7 @@ class LiquidityCurve {
     );
   }
 
-  compute(
+  private compute(
     currentTick: number,
     tickSpacing: number,
     ticks: Tick[],
@@ -101,7 +99,7 @@ class LiquidityCurve {
     const dist: Vector<number> = [[currentTick, Number(liquidity)]];
     let prevLiq = liquidity;
 
-    const currentTickIdx = Math.trunc(this.MAX_TICK / tickSpacing);
+    const currentTickIdx = Math.trunc(MAX_TICK / tickSpacing);
     for (let i = currentTickIdx + 1; i < ticks.length; i++) {
       const tick = ticks[i];
       const liquidity = JSBI.add(prevLiq, tick.liquidityNet);

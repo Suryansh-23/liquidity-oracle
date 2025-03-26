@@ -1,4 +1,4 @@
-import { Curve, LiquidityMetricsResult } from "./types";
+import { Curve, LiquidityMetricsResult, Vector } from "./types";
 import Volatility from "./volatilityMetrics";
 import Transition from "./transitionMetrics";
 import structureMetrics from "./structureMetrics";
@@ -7,50 +7,53 @@ export class LiquidityAnalyzer {
   private volatility: Volatility;
   private transition: Transition;
   private currentTick: number;
-  private snapshotSize: number;
+  private tickSpacing: number;
 
   constructor(
     maxWindowSize: number,
-    snapshotSize: number,
+    tickSpacing: number,
     initialTick: number = 0
   ) {
-    this.volatility = new Volatility(maxWindowSize, snapshotSize);
+    this.volatility = new Volatility(maxWindowSize, tickSpacing);
     this.transition = new Transition();
     this.currentTick = initialTick;
-    this.snapshotSize = snapshotSize;
+    this.tickSpacing = tickSpacing;
   }
 
   /**
    * Process a new liquidity distribution curve and return comprehensive metrics
-   * @param curve The current liquidity distribution curve
+   * @param dist The current liquidity distribution
    * @param currentTick The current tick position
    * @returns Combined metrics including volatility, structure, and timestamp
    */
   processDistribution(
-    curve: Curve,
-    currentTick?: number
+    dist: Vector<number>,
+    currentTick: number
   ): LiquidityMetricsResult {
     if (currentTick !== undefined) {
       this.currentTick = currentTick;
     }
 
     // Calculate transition score for the new distribution
-    const transitionScore = this.transition.add(curve);
+    const transitionScore = this.transition.add(dist);
 
     // Calculate volatility metrics
-    const volatilityResult = this.volatility.add(curve, transitionScore);
+    const volatilityResult = this.volatility.add(
+      currentTick,
+      dist,
+      transitionScore
+    );
 
     // Calculate structure metrics
     const structureResult = structureMetrics(
-      curve,
+      dist,
       this.currentTick,
-      this.snapshotSize
+      this.tickSpacing
     );
 
     return {
       volatility: volatilityResult,
       structure: structureResult,
-      timestamp: Date.now(),
     };
   }
 

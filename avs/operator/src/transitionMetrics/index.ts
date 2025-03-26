@@ -1,4 +1,4 @@
-import { Curve, VectorPair } from "../types";
+import { Curve, Vector, VectorPair } from "../types";
 import { curveToVectorPair, toPrecision } from "../utils";
 import cosine from "./cosine";
 import hellingerDistance from "./hellinger";
@@ -70,15 +70,19 @@ const normalizeWasserstein = (
 };
 
 class Transition {
-  prevDist: Curve = [];
+  prevDist: Vector<number> = [];
 
-  add(distribution: Curve): number {
+  add(distribution: Vector<number>): number {
     if (this.prevDist.length === 0) {
       this.prevDist = distribution;
-      return 0;
+      return -1;
     }
 
-    const vp = curveToVectorPair(this.prevDist, distribution);
+    if (this.prevDist.length !== distribution.length) {
+      throw new Error("Distribution lengths do not match");
+    }
+
+    const vp = [this.prevDist, distribution] as VectorPair<number>;
     const transition = this.compute(vp);
     this.prevDist = distribution;
 

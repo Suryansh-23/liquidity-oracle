@@ -1,5 +1,9 @@
 import * as dotenv from "dotenv";
 import { ethers } from "ethers";
+import { LiquidityAnalyzer } from "./src";
+import { MAX_WINDOW_SIZE } from "./src/utils";
+import LiquidityCurve from "./src/liquidityCurve";
+import { isHex } from "viem";
 const fs = require("fs");
 const path = require("path");
 dotenv.config();
@@ -89,15 +93,75 @@ interface Task {
   tickUpper: number;
   tickSpacing: number;
   activeTick: number;
-  tickLiquidities: bigint[];
 }
 
-const signAndRespondToTask = async (taskIndex: number, task: Task) => {
-  const message = `Hello, ${taskName}`;
-  const messageHash = ethers.solidityPackedKeccak256(["string"], [message]);
-  const messageBytes = ethers.getBytes(messageHash);
-  const signature = await wallet.signMessage(messageBytes);
+let liquidityAnalyzer: LiquidityAnalyzer;
+const lc = new LiquidityCurve(process.env.STATE_VIEW_ADDRESS!);
 
+const signAndRespondToTask = async (taskIndex: number, task: Task) => {
+  // const message = `Hello, ${taskName}`;
+  // const messageHash = ethers.solidityPackedKeccak256(["string"], [message]);
+  // const messageBytes = ethers.getBytes(messageHash);
+  // const signature = await wallet.signMessage(messageBytes);
+  // console.log(`Signing and responding to task ${taskIndex}`);
+  // const operators = [await wallet.getAddress()];
+  // const signatures = [signature];
+  // const signedTask = ethers.AbiCoder.defaultAbiCoder().encode(
+  //   ["address[]", "bytes[]", "uint32"],
+  //   [
+  //     operators,
+  //     signatures,
+  //     ethers.toBigInt((await provider.getBlockNumber()) - 1),
+  //   ]
+  // );
+  // const tx = await oracleServiceManager.respondToTask(
+  //   { name: taskName, taskCreatedBlock: taskCreatedBlock },
+  //   taskIndex,
+  //   signedTask
+  // );
+  // await tx.wait();
+  // console.log(`Responded to task.`);
+  if (!liquidityAnalyzer) {
+    liquidityAnalyzer = new LiquidityAnalyzer(
+      MAX_WINDOW_SIZE,
+      task.tickSpacing,
+      task.activeTick
+    );
+  }
+
+  if (!isHex(task.poolId)) {
+    throw new Error("Invalid poolId");
+  }
+
+  const dist = await lc.get(task.poolId, task.activeTick, task.tickSpacing);
+  console.log("Liquidity distribution:", dist);
+
+  const metrics = liquidityAnalyzer.processDistribution(dist, task.activeTick);
+  console.log("Liquidity metrics:", metrics);
+
+  // Convert metrics to Solidity struct
+  const solPoolMetrics = {
+    liqTransition: ethers.getBigInt(metrics.volatility.transition),
+    volatility: ethers.getBigInt(metrics.volatility.overall),
+    depth: ethers.getBigInt(metrics.structure.liquidityDepth),
+    spread: ethers.getBigInt(metrics.structure.liquiditySpread),
+    liqConcentration: ethers.getBigInt(
+      metrics.structure.liquidityConcentration
+    ),
+  };
+
+  // Sign the task message
+  const messageHash = ethers.solidityPackedKeccak256(
+    ["bytes32", "int24", "int24", "int24", "int24"],
+    [
+      task.poolId,
+      task.tickLower,
+      task.tickUpper,
+      task.activeTick,
+      task.tickSpacing,
+    ]
+  );
+  const signature = await wallet.signMessage(ethers.getBytes(messageHash));
   console.log(`Signing and responding to task ${taskIndex}`);
 
   const operators = [await wallet.getAddress()];
@@ -112,8 +176,9 @@ const signAndRespondToTask = async (taskIndex: number, task: Task) => {
   );
 
   const tx = await oracleServiceManager.respondToTask(
-    { name: taskName, taskCreatedBlock: taskCreatedBlock },
+    task,
     taskIndex,
+    solPoolMetrics,
     signedTask
   );
   await tx.wait();
@@ -191,7 +256,6 @@ const monitorNewTasks = async () => {
         tickUpper: task.tickUpper,
         tickSpacing: task.tickSpacing,
         activeTick: task.activeTick,
-        tickLiquidities: task.tickLiquidities,
       };
 
       await signAndRespondToTask(taskIndex, taskObj);
