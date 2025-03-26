@@ -1,4 +1,3 @@
-import computeTransitionDelta from "../transitionMetrics";
 import {
   AggregateHistory,
   Curve,
@@ -6,7 +5,7 @@ import {
   VolatilityScores,
   VolatilitySnapshot,
 } from "../types";
-import { curveToVectorPair, toPrecision } from "../utils";
+import { toPrecision } from "../utils";
 import aggregateVolatility from "./aggregateVolatility";
 
 import entropyVolatility from "./entropyVolatility";
@@ -40,14 +39,12 @@ export default class Volatility {
    * Add a new liquidity distribution snapshot to the window
    * @param distribution An array representing liquidity distribution across ticks
    */
-  add(distribution: Curve): VolatilityResult | undefined {
+  add(distribution: Curve, transition: number): VolatilityResult | undefined {
     if (this.window.length >= this.maxSize) {
       this.window.shift();
     }
 
     if (this.latestDistribution) {
-      const vp = curveToVectorPair(this.latestDistribution, distribution);
-      const transition = computeTransitionDelta(vp);
       this.window.push({
         liquidity: distribution,
         transition,

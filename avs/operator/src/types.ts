@@ -75,3 +75,9 @@ export interface StructureMetricResults {
   liquidityDepth: number;
   liquiditySpread: number;
 }
+
+export interface LiquidityMetricsResult {
+  volatility?: VolatilityResult;
+  structure: StructureMetricResults;
+  timestamp?: number;
+}
