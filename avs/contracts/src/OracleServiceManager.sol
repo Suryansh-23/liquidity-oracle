@@ -21,8 +21,6 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
 
     struct Task {
         bytes32 poolId;
-        int24 tickLower;
-        int24 tickUpper;
         int24 activeTick;
         int24 tickSpacing;
     }
@@ -61,8 +59,6 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
 
     function createNewTask(
         bytes32 poolId,
-        int24 tickLower,
-        int24 tickUpper,
         int24 activeTick,
         int24 tickSpacing
     ) external {
@@ -70,8 +66,6 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
 
         Task memory task = Task({
             poolId: poolId,
-            tickLower: tickLower,
-            tickUpper: tickUpper,
             activeTick: activeTick,
             tickSpacing: tickSpacing
         });
