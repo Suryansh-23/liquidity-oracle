@@ -23,10 +23,8 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         bytes32 poolId;
         int24 tickLower;
         int24 tickUpper;
-        int24 localRangeOffset;
         int24 activeTick;
         int24 tickSpacing;
-        int256[] tickLiquidities;
     }
 
     address public hook;
@@ -65,10 +63,8 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         bytes32 poolId,
         int24 tickLower,
         int24 tickUpper,
-        int24 localRangeOffset,
         int24 activeTick,
-        int24 tickSpacing,
-        int256[] memory tickLiquidities
+        int24 tickSpacing
     ) external {
         if (msg.sender != hook) revert OracleServiceManager__OnlyHook();
 
@@ -76,10 +72,8 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
             poolId: poolId,
             tickLower: tickLower,
             tickUpper: tickUpper,
-            localRangeOffset: localRangeOffset,
             activeTick: activeTick,
-            tickSpacing: tickSpacing,
-            tickLiquidities: tickLiquidities
+            tickSpacing: tickSpacing
         });
 
         allTaskHashes[latestTaskNum] = keccak256(abi.encode(task));
