@@ -7,7 +7,6 @@ import {
 } from "../types";
 import { MAX_TICK, MIN_TICK, toPrecision } from "../utils";
 import aggregateVolatility from "./aggregateVolatility";
-
 import entropyVolatility from "./entropyVolatility";
 import ewmx from "./normalize";
 import overallVolatility from "./overallVolatility";
@@ -15,19 +14,21 @@ import perTickVolatility from "./perTickVolatility";
 import temporalDependence from "./temporalVolatility";
 import transitionVolatility from "./transitionVolatility";
 
+// Scale factor for 4 decimal places precision
+const SCALE_FACTOR = 10000n;
+
 export default class Volatility {
   private maxSize: number;
   private tickSpacing: number;
   private latestDistribution: Vector<number> = [];
   private window: VolatilitySnapshot[] = [];
-  private prevTransitionVol: number = 0;
-
+  private prevTransitionVol: bigint = 0n;
   private aggHistory: AggregateHistory = {
-    rsdEMX: 0,
-    rvEMX: 0,
-    rangeEMX: 0,
-    transitionEMX: 0,
-    perTickEMX: 0,
+    rsdEMX: 0n,
+    rvEMX: 0n,
+    rangeEMX: 0n,
+    transitionEMX: 0n,
+    perTickEMX: 0n,
   };
 
   constructor(maxSize: number, tickSpacing: number) {
@@ -42,10 +43,10 @@ export default class Volatility {
   add(
     currentTick: number,
     distribution: Vector<number>,
-    transition: number
+    transition: bigint
   ): VolatilityResult {
     /*
-      s: transition = -1
+      s: transition = -1n
       s+1: transition = t_0
       s+2: transition = t_1
       .
@@ -54,20 +55,19 @@ export default class Volatility {
       s+n: transition = t_n
     */
     this.latestDistribution = distribution;
-    if (transition === -1) {
-      this.prevTransitionVol = 0;
+    if (transition === -1n) {
+      this.prevTransitionVol = 0n;
       this.window.push({
         liquidity: distribution,
-        transition: 0,
+        transition: 0n,
       });
-
       return {
-        overall: 0,
-        transition: 0,
-        perTick: 0,
-        entropy: 0,
-        temporal: 0,
-        aggregate: 0,
+        overall: 0n,
+        transition: 0n,
+        perTick: 0n,
+        entropy: 0n,
+        temporal: 0n,
+        aggregate: 0n,
       };
     } else {
       this.prevTransitionVol = transition;
@@ -75,17 +75,16 @@ export default class Volatility {
         liquidity: distribution,
         transition,
       });
-
       if (this.window.length >= this.maxSize) {
         return this.compute(currentTick);
       } else {
         return {
-          overall: 0,
-          transition: 0,
-          perTick: 0,
-          entropy: 0,
-          temporal: 0,
-          aggregate: 0,
+          overall: 0n,
+          transition: 0n,
+          perTick: 0n,
+          entropy: 0n,
+          temporal: 0n,
+          aggregate: 0n,
         };
       }
     }
@@ -111,10 +110,17 @@ export default class Volatility {
       this.aggHistory.perTickEMX
     );
 
-    const entropy = toPrecision(
-      entropyVolatility(this.window) /
-        Math.log(Math.trunc((MAX_TICK - MIN_TICK) / this.tickSpacing))
+    // Calculate entropy with bigint scaling
+    const entropyVal = entropyVolatility(this.window);
+    // Approximate log calculation for denominator scaling
+    const tickRange = Math.trunc((MAX_TICK - MIN_TICK) / this.tickSpacing);
+    const logScaled = BigInt(
+      Math.floor(Math.log(tickRange) * Number(SCALE_FACTOR))
     );
+
+    // Normalize entropy by dividing by log(range)
+    const entropy =
+      logScaled > 0n ? (entropyVal * SCALE_FACTOR) / logScaled : 0n;
 
     const temporal = temporalDependence(this.window);
 
