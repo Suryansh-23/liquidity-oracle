@@ -1,4 +1,3 @@
-import JSBI from "jsbi";
 import {
   createPublicClient,
   Hex,
@@ -12,14 +11,14 @@ import { Vector } from "./types";
 import { MAX_TICK, MIN_TICK } from "./utils";
 
 interface TickLiquidity {
-  liquidityGross: JSBI; // uint128
-  liquidityNet: JSBI; // int128
+  liquidityGross: bigint; // uint128
+  liquidityNet: bigint; // int128
 }
 
 interface Tick {
   tickIdx: number; // int24
-  liquidityGross: JSBI; // uint128
-  liquidityNet: JSBI; // int128
+  liquidityGross: bigint; // uint128
+  liquidityNet: bigint; // int128
 }
 
 // The multicall response would be an array of these tuples
@@ -46,13 +45,13 @@ class LiquidityCurve {
     ]);
   }
 
-  private async getPoolLiquidity(poolAddress: Hex): Promise<JSBI> {
+  private async getPoolLiquidity(poolAddress: Hex): Promise<bigint> {
     return (await this.client.readContract({
       address: this.stateViewAddress,
       abi: this.abi,
       functionName: "getLiquidity",
       args: [poolAddress],
-    })) as unknown as JSBI;
+    })) as bigint;
   }
 
   async get(
@@ -60,9 +59,16 @@ class LiquidityCurve {
     currentTick: number,
     tickSpacing: number
   ): Promise<Vector<number>> {
+    const tickSpacingB = BigInt(tickSpacing);
+
     const ticks = Array.from(
-      { length: Math.trunc((MAX_TICK - MIN_TICK) / tickSpacing + 1) },
-      (_, i) => MIN_TICK + i * tickSpacing
+      // Convert bigints to numbers for this calculation
+      {
+        length: Math.trunc(
+          (Number(MAX_TICK) - Number(MIN_TICK)) / Number(tickSpacingB) + 1
+        ),
+      },
+      (_, i) => Number(MIN_TICK) + i * Number(tickSpacingB) // Convert MIN_TICK to number
     );
 
     const [res, poolLiquidity] = await Promise.all([
@@ -78,15 +84,18 @@ class LiquidityCurve {
       this.getPoolLiquidity(poolAddress),
     ]);
 
+    const poolLiquidityBigInt = BigInt(poolLiquidity);
+
     return this.compute(
       currentTick,
       tickSpacing,
       res.map((tick, i) => ({
-        tickIdx: MIN_TICK + i * tickSpacing,
+        // Convert MIN_TICK to number for calculation
+        tickIdx: Number(MIN_TICK) + i * tickSpacing,
         liquidityGross: tick.liquidityGross,
         liquidityNet: tick.liquidityNet,
       })),
-      poolLiquidity
+      poolLiquidityBigInt
     );
   }
 
@@ -94,27 +103,26 @@ class LiquidityCurve {
     currentTick: number,
     tickSpacing: number,
     ticks: Tick[],
-    liquidity: JSBI
+    liquidity: bigint
   ): Vector<number> {
-    const dist: Vector<number> = [[currentTick, Number(liquidity)]];
+    const dist: Vector<number> = [[BigInt(currentTick), liquidity]];
     let prevLiq = liquidity;
 
-    const currentTickIdx = Math.trunc(MAX_TICK / tickSpacing);
+    // Convert MAX_TICK to number for division
+    const currentTickIdx = Math.trunc(Number(MAX_TICK) / tickSpacing);
     for (let i = currentTickIdx + 1; i < ticks.length; i++) {
       const tick = ticks[i];
-      const liquidity = JSBI.subtract(prevLiq, tick.liquidityNet);
-
-      dist.push([tick.tickIdx, Number(liquidity)]);
-      prevLiq = liquidity;
+      const currentLiquidity = prevLiq - tick.liquidityNet;
+      dist.push([BigInt(tick.tickIdx), currentLiquidity]);
+      prevLiq = currentLiquidity;
     }
 
     prevLiq = liquidity;
     for (let i = currentTickIdx - 1; i >= 0; i--) {
       const tick = ticks[i];
-      const liquidity = JSBI.subtract(prevLiq, tick.liquidityNet);
-
-      dist.unshift([tick.tickIdx, Number(liquidity)]);
-      prevLiq = liquidity;
+      const currentLiquidity = prevLiq - tick.liquidityNet;
+      dist.unshift([BigInt(tick.tickIdx), currentLiquidity]);
+      prevLiq = currentLiquidity;
     }
 
     return dist;

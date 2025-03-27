@@ -1,12 +1,12 @@
 import { Curve, PRECISION, Vector, VectorPair } from "./types";
 
-export const MIN_TICK = -887272;
-export const MAX_TICK = 887272;
+export const MIN_TICK: bigint = -887272n;
+export const MAX_TICK: bigint = 887272n;
 
 export const MAX_WINDOW_SIZE = 5;
 
 export const distributionToCurve = (
-  distribution: number[],
+  distribution: bigint[],
   start: number,
   end: number,
   tickSpacing: number
@@ -26,9 +26,9 @@ export const distributionToCurve = (
   for (let i = start; i <= end; i += tickSpacing) {
     const index = Math.floor((i - start) / tickSpacing);
     if (index < distribution.length) {
-      curve.push([i, distribution[index]]);
+      curve.push([BigInt(i), distribution[index]]);
     } else {
-      curve.push([i, 0]);
+      curve.push([BigInt(i), 0n]);
     }
   }
 
@@ -41,23 +41,31 @@ export const curveToVectorPair = (c1: Curve, c2: Curve): VectorPair<number> => {
   }
 
   const l = c1.length;
-  const delta = c1[1][0] - c1[0][0];
+  const delta = Number(c1[1][0] - c1[0][0]);
 
-  if (c1[0][0] < c2[0][0]) {
-    for (let i = c1[0][0]; i < c2[0][0]; i += delta) {
-      c2.unshift([i, 0]);
+  if (Number(c1[0][0]) < Number(c2[0][0])) {
+    for (let i = Number(c1[0][0]); i < Number(c2[0][0]); i += delta) {
+      c2.unshift([BigInt(i), 0n]);
     }
 
-    for (let i = c1[l - 1][0] + delta; i <= c2[l - 1][0]; i += delta) {
-      c1.push([i, 0]);
+    for (
+      let i = Number(c1[l - 1][0]) + delta;
+      i <= Number(c2[l - 1][0]);
+      i += delta
+    ) {
+      c1.push([BigInt(i), 0n]);
     }
-  } else if (c2[0][0] < c1[0][0]) {
-    for (let i = c1[0][0]; i < c2[0][0]; i += delta) {
-      c1.unshift([i, 0]);
+  } else if (Number(c2[0][0]) < Number(c1[0][0])) {
+    for (let i = Number(c2[0][0]); i < Number(c1[0][0]); i += delta) {
+      c1.unshift([BigInt(i), 0n]);
     }
 
-    for (let i = c2[l - 1][0] + delta; i <= c1[l - 1][0]; i += delta) {
-      c2.push([i, 0]);
+    for (
+      let i = Number(c2[l - 1][0]) + delta;
+      i <= Number(c1[l - 1][0]);
+      i += delta
+    ) {
+      c2.push([BigInt(i), 0n]);
     }
   }
 
@@ -66,15 +74,18 @@ export const curveToVectorPair = (c1: Curve, c2: Curve): VectorPair<number> => {
 
 export const sumNormalize = (
   v: Vector<number>,
-  sum?: number
+  sum?: bigint
 ): Vector<number> => {
   if (sum === undefined) {
-    sum = v.reduce((acc, [_, x]) => acc + x, 0);
+    sum = v.reduce((acc, [_, x]) => acc + x, 0n);
   }
 
-  return v.map(([x, y]) => [x, y / sum]);
+  const scaleFactor = 10000n; // For precision (4 decimal places)
+  return v.map(([x, y]) => [x, (y * scaleFactor) / sum]);
 };
 
-export const toPrecision = (n: number): number => {
-  return Number(n.toFixed(PRECISION));
+export const toPrecision = (n: bigint): bigint => {
+  // For bigint, we assume the value is already scaled by 10^PRECISION
+  // We don't need to truncate decimal places since bigint is already integer
+  return n;
 };

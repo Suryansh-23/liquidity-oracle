@@ -1,18 +1,18 @@
 export const PRECISION = 4;
 
-export type Curve = [number, number][];
+export type Curve = [bigint, bigint][];
 
-export type Vector<L extends number> = { length: L } & [...[number, number][]];
+export type Vector<L extends number> = { length: L } & [...[bigint, bigint][]];
 export type VectorPair<L extends number> = [Vector<L>, Vector<L>];
 
 // Base compute function type - now accepts array of snapshots
-export type ComputeFunction = (window: number[][]) => number;
+export type ComputeFunction = (window: bigint[][]) => bigint;
 
 // Configuration for each compute function
 export interface ComputeConfig {
   id: string;
   compute: ComputeFunction;
-  weight: number;
+  weight: bigint;
 }
 
 // Runner configuration type
@@ -20,60 +20,60 @@ export interface RunnerConfig {
   windowSize: number;
   computeConfigs: ComputeConfig[];
   aggregator: (
-    scores: Map<string, number>,
-    weights: Map<string, number>
-  ) => number;
+    scores: Map<string, bigint>,
+    weights: Map<string, bigint>
+  ) => bigint;
 }
 
 // Compute results type
 export interface ComputeResults {
-  individualScores: Map<string, number>;
-  aggregatedScore: number;
+  individualScores: Map<string, bigint>;
+  aggregatedScore: bigint;
 }
 
 // Volatility-specific types
 export interface VolatilitySnapshot {
   liquidity: Vector<number>;
-  transition: number;
+  transition: bigint;
 }
 
 export interface VolatilityScores {
-  overall: number;
-  transition: number;
-  perTick: number;
-  entropy: number;
-  temporal: number;
+  overall: bigint;
+  transition: bigint;
+  perTick: bigint;
+  entropy: bigint;
+  temporal: bigint;
 }
 
 export interface AggregateHistory {
-  rsdEMX: number;
-  rvEMX: number;
-  rangeEMX: number;
-  transitionEMX: number;
-  perTickEMX: number;
+  rsdEMX: bigint;
+  rvEMX: bigint;
+  rangeEMX: bigint;
+  transitionEMX: bigint;
+  perTickEMX: bigint;
 }
 
 export interface VolatilityWeights {
-  overall: number;
-  transition: number;
-  perTick: number;
-  entropy: number;
-  temporal: number;
+  overall: bigint;
+  transition: bigint;
+  perTick: bigint;
+  entropy: bigint;
+  temporal: bigint;
 }
 
 export interface VolatilityResult {
-  overall: number;
-  transition: number;
-  perTick: number;
-  entropy: number;
-  temporal: number;
-  aggregate: number;
+  overall: bigint;
+  transition: bigint;
+  perTick: bigint;
+  entropy: bigint;
+  temporal: bigint;
+  aggregate: bigint;
 }
 
 export interface StructureMetricResults {
-  liquidityConcentration: number;
-  liquidityDepth: number;
-  liquiditySpread: number;
+  liquidityConcentration: bigint;
+  liquidityDepth: bigint;
+  liquiditySpread: bigint;
 }
 
 export interface LiquidityMetricsResult {

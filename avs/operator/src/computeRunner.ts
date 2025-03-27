@@ -1,5 +1,5 @@
-import WindowManager from "./windowManager";
 import { ComputeConfig, RunnerConfig, ComputeResults } from "./types";
+import WindowManager from "./windowManager";
 
 class ComputeRunner {
   private windowManager: WindowManager;
@@ -18,7 +18,7 @@ class ComputeRunner {
    * Add a new liquidity distribution snapshot to the window and compute all scores
    * @param distribution An array representing liquidity distribution across ticks
    */
-  addValue(distribution: number[]): ComputeResults {
+  addValue(distribution: number[] | bigint[]): ComputeResults {
     this.windowManager.add(distribution);
     return this.compute();
   }
@@ -28,8 +28,8 @@ class ComputeRunner {
    */
   private compute(): ComputeResults {
     const window = this.windowManager.getWindow();
-    const individualScores = new Map<string, number>();
-    const weights = new Map<string, number>();
+    const individualScores = new Map<string, bigint>();
+    const weights = new Map<string, bigint>();
 
     for (const [id, config] of this.computeConfigs) {
       individualScores.set(id, config.compute(window));
@@ -52,7 +52,7 @@ class ComputeRunner {
   /**
    * Get the current window data containing all liquidity distribution snapshots
    */
-  getWindow(): number[][] {
+  getWindow(): bigint[][] {
     return this.windowManager.getWindow();
   }
 }
