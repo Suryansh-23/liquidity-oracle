@@ -30,10 +30,10 @@ import {console} from "forge-std/console.sol";
 
 contract ModifyLiquidity is Script {
     PoolModifyLiquidityTest constant lpRouter =
-        PoolModifyLiquidityTest(0x325c8Df4CFb5B068675AFF8f62aA668D1dEc3C4B);
-    address constant token0 = 0x8E45C0936fa1a65bDaD3222bEFeC6a03C83372cE;
-    address constant token1 = 0xa62835D1A6bf5f521C4e2746E1F51c923b8f3483;
-    address constant hook = 0xb3bE052D389B7775BAb1e12F5F0c2d0b70005540;
+        PoolModifyLiquidityTest(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
+    address constant token0 = 0x0165878A594ca255338adfa4d48449f69242Eb8F;
+    address constant token1 = 0x5FC8d32690cc91D4c39d9d3abcBD16989F875707;
+    address constant hook = 0x29820e2001bD7bd693dFAe8De645c4a9D21dd540;
 
     function run() external {
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
@@ -44,7 +44,10 @@ contract ModifyLiquidity is Script {
         MockERC20(token0).approve(address(lpRouter), 1000_000 ether);
         MockERC20(token1).approve(address(lpRouter), 1000_000 ether);
 
-        console.log("service manager address: ", OracleHook(hook).serviceManager());
+        console.log(
+            "service manager address: ",
+            OracleHook(hook).serviceManager()
+        );
 
         lpRouter.modifyLiquidity(
             PoolKey({
