@@ -66,7 +66,11 @@ contract OracleHookTest is Test, Deployers {
                 Hooks.AFTER_SWAP_FLAG
         );
 
-        deployCodeTo("OracleHook.sol", abi.encode(manager), address(flags));
+        deployCodeTo(
+            "OracleHook.sol",
+            abi.encode(manager, address(this)),
+            address(flags)
+        );
 
         // Deploy our hook
         hook = OracleHook(address(flags));
@@ -267,8 +271,6 @@ contract OracleHookTest is Test, Deployers {
     function testRemoveLiquidityCanTriggerAVS() public {
         _addLiquidity();
 
-        (, int24 tickBefore, , ) = manager.getSlot0(poolId);
-
         (
             int24 lastActiveTickBefore,
             int256 totalLiquidityBefore,
@@ -313,7 +315,10 @@ contract OracleHookTest is Test, Deployers {
             lastSnapshotTotalLiquidityBefore - liq
         );
         assertEq(cumulativeLiquidityDeltaAfter, 0);
-        assertEq(lastUpdateTimestampAfter, block.timestamp);
+        assertEq(
+            lastUpdateTimestampAfter,
+            lastUpdateTimestampBefore + 5 seconds
+        );
     }
 
     function testMultipleLiquidityModifications() public {
@@ -363,7 +368,7 @@ contract OracleHookTest is Test, Deployers {
             lastSnapshotTotalLiquidityBefore
         );
         assertEq(cumulativeLiquidityDeltaAfter, liq);
-        assertEq(lastUpdateTimestampAfter, 1);
+        assertEq(lastUpdateTimestampAfter, lastUpdateTimestampBefore);
 
         // small change in liquidity (add)
         liq = LiquidityAmounts.getLiquidityForAmounts(
@@ -451,13 +456,11 @@ contract OracleHookTest is Test, Deployers {
     function testSwapCanTriggerAVS() public {
         _addLiquidity();
 
-        (, int24 tickBefore, , ) = manager.getSlot0(poolId);
-
         (
             int24 lastActiveTickBefore,
-            int256 totalLiquidityBefore,
-            uint256 lastSnapshotTotalLiquidityBefore,
-            uint256 cumulativeLiquidityDeltaBefore,
+            ,
+            ,
+            ,
             uint256 lastUpdateTimestampBefore
         ) = hook.snapshots(poolId);
 
@@ -481,11 +484,15 @@ contract OracleHookTest is Test, Deployers {
 
         (
             int24 lastActiveTickAfter,
-            int256 totalLiquidityAfter,
-            uint256 lastSnapshotTotalLiquidityAfter,
-            uint256 cumulativeLiquidityDeltaAfter,
+            ,
+            ,
+            ,
             uint256 lastUpdateTimestampAfter
         ) = hook.snapshots(poolId);
+
+        assertEq(lastActiveTickAfter, tickAfter);
+        assertEq(lastUpdateTimestampAfter, lastUpdateTimestampBefore + 5);
+        assert(lastActiveTickAfter != lastActiveTickBefore);
     }
 
     function testSmallSwapCannotTriggerAVS() public {
@@ -523,15 +530,7 @@ contract OracleHookTest is Test, Deployers {
     function testTimeCanTriggerAVS() public {
         _addLiquidity();
 
-        (, int24 tickBefore, , ) = manager.getSlot0(poolId);
-
-        (
-            int24 lastActiveTickBefore,
-            ,
-            ,
-            ,
-            uint256 lastUpdateTimestampBefore
-        ) = hook.snapshots(poolId);
+        (, , , , uint256 lastUpdateTimestampBefore) = hook.snapshots(poolId);
 
         vm.warp(block.timestamp + 10 minutes);
 
@@ -561,7 +560,10 @@ contract OracleHookTest is Test, Deployers {
         ) = hook.snapshots(poolId);
 
         assertEq(lastActiveTickAfter, tickAfter);
-        assertEq(lastUpdateTimestampAfter, block.timestamp);
+        assertEq(
+            lastUpdateTimestampAfter,
+            lastUpdateTimestampBefore + 10 minutes
+        );
     }
 
     function _addLiquidity() internal {
