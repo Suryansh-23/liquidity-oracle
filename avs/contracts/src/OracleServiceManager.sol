@@ -21,8 +21,6 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
 
     struct Task {
         bytes32 poolId;
-        int24 tickLower;
-        int24 tickUpper;
         int24 activeTick;
         int24 tickSpacing;
     }
@@ -38,8 +36,7 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         address _stakeRegistry,
         address _rewardsCoordinator,
         address _delegationManager,
-        address _allocationManager,
-        address _hook
+        address _allocationManager
     )
         ECDSAServiceManagerBase(
             _avsDirectory,
@@ -48,21 +45,19 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
             _delegationManager,
             _allocationManager
         )
-    {
-        hook = _hook;
-    }
+    {}
 
     function initialize(
         address initialOwner,
-        address _rewardsInitiator
+        address _rewardsInitiator,
+        address _hook
     ) external initializer {
         __ServiceManagerBase_init(initialOwner, _rewardsInitiator);
+        hook = _hook;
     }
 
     function createNewTask(
         bytes32 poolId,
-        int24 tickLower,
-        int24 tickUpper,
         int24 activeTick,
         int24 tickSpacing
     ) external {
@@ -70,8 +65,6 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
 
         Task memory task = Task({
             poolId: poolId,
-            tickLower: tickLower,
-            tickUpper: tickUpper,
             activeTick: activeTick,
             tickSpacing: tickSpacing
         });

@@ -2,8 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import {TransparentUpgradeableProxy} from
-    "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {Script} from "forge-std/Script.sol";
 import {console2} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
@@ -11,8 +10,7 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {ECDSAStakeRegistry} from "@eigenlayer-middleware/src/unaudited/ECDSAStakeRegistry.sol";
 import {OracleServiceManager} from "../../src/OracleServiceManager.sol";
 import {IDelegationManager} from "@eigenlayer/contracts/interfaces/IDelegationManager.sol";
-import {IECDSAStakeRegistryTypes} from
-    "@eigenlayer-middleware/src/interfaces/IECDSAStakeRegistry.sol";
+import {IECDSAStakeRegistryTypes} from "@eigenlayer-middleware/src/interfaces/IECDSAStakeRegistry.sol";
 import {UpgradeableProxyLib} from "./UpgradeableProxyLib.sol";
 import {CoreDeployLib, CoreDeploymentParsingLib} from "./CoreDeploymentParsingLib.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -22,7 +20,8 @@ library OracleDeploymentLib {
     using Strings for *;
     using UpgradeableProxyLib for address;
 
-    Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+    Vm internal constant vm =
+        Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
 
     struct DeploymentData {
         address oracleServiceManager;
@@ -50,11 +49,21 @@ library OracleDeploymentLib {
 
         {
             // First, deploy upgradeable proxy contracts that will point to the implementations.
-            result.oracleServiceManager = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
-            result.stakeRegistry = UpgradeableProxyLib.setUpEmptyProxy(proxyAdmin);
+            result.oracleServiceManager = UpgradeableProxyLib.setUpEmptyProxy(
+                proxyAdmin
+            );
+            result.stakeRegistry = UpgradeableProxyLib.setUpEmptyProxy(
+                proxyAdmin
+            );
         }
         deployAndUpgradeStakeRegistryImpl(result, core, quorum);
-        deployAndUpgradeServiceManagerImpl(result, core, owner, rewardsInitiator, hook);
+        deployAndUpgradeServiceManagerImpl(
+            result,
+            core,
+            owner,
+            rewardsInitiator,
+            hook
+        );
 
         return result;
     }
@@ -64,13 +73,19 @@ library OracleDeploymentLib {
         CoreDeployLib.DeploymentData memory core,
         IECDSAStakeRegistryTypes.Quorum memory quorum
     ) private {
-        address stakeRegistryImpl =
-            address(new ECDSAStakeRegistry(IDelegationManager(core.delegationManager)));
+        address stakeRegistryImpl = address(
+            new ECDSAStakeRegistry(IDelegationManager(core.delegationManager))
+        );
 
         bytes memory upgradeCall = abi.encodeCall(
-            ECDSAStakeRegistry.initialize, (deployment.oracleServiceManager, 0, quorum)
+            ECDSAStakeRegistry.initialize,
+            (deployment.oracleServiceManager, 0, quorum)
         );
-        UpgradeableProxyLib.upgradeAndCall(deployment.stakeRegistry, stakeRegistryImpl, upgradeCall);
+        UpgradeableProxyLib.upgradeAndCall(
+            deployment.stakeRegistry,
+            stakeRegistryImpl,
+            upgradeCall
+        );
     }
 
     function deployAndUpgradeServiceManagerImpl(
@@ -87,16 +102,19 @@ library OracleDeploymentLib {
                 deployment.stakeRegistry,
                 core.rewardsCoordinator,
                 core.delegationManager,
-                core.allocationManager,
-                hook
+                core.allocationManager
             )
         );
 
-        bytes memory upgradeCall =
-            abi.encodeCall(OracleServiceManager.initialize, (owner, rewardsInitiator));
+        bytes memory upgradeCall = abi.encodeCall(
+            OracleServiceManager.initialize,
+            (owner, rewardsInitiator, hook)
+        );
 
         UpgradeableProxyLib.upgradeAndCall(
-            oracleServiceManager, oracleServiceManagerImpl, upgradeCall
+            oracleServiceManager,
+            oracleServiceManagerImpl,
+            upgradeCall
         );
     }
 
@@ -110,15 +128,24 @@ library OracleDeploymentLib {
         string memory directoryPath,
         uint256 chainId
     ) internal view returns (DeploymentData memory) {
-        string memory fileName = string.concat(directoryPath, vm.toString(chainId), ".json");
+        string memory fileName = string.concat(
+            directoryPath,
+            vm.toString(chainId),
+            ".json"
+        );
 
-        require(vm.exists(fileName), "OracleDeployment: Deployment file does not exist");
+        require(
+            vm.exists(fileName),
+            "OracleDeployment: Deployment file does not exist"
+        );
 
         string memory json = vm.readFile(fileName);
 
         DeploymentData memory data;
         /// TODO: 2 Step for reading deployment json.  Read to the core and the AVS data
-        data.oracleServiceManager = json.readAddress(".addresses.oracleServiceManager");
+        data.oracleServiceManager = json.readAddress(
+            ".addresses.oracleServiceManager"
+        );
         data.stakeRegistry = json.readAddress(".addresses.stakeRegistry");
         data.strategy = json.readAddress(".addresses.strategy");
         data.token = json.readAddress(".addresses.token");
@@ -127,9 +154,7 @@ library OracleDeploymentLib {
     }
 
     /// write to default output path
-    function writeDeploymentJson(
-        DeploymentData memory data
-    ) internal {
+    function writeDeploymentJson(DeploymentData memory data) internal {
         writeDeploymentJson("deployments/oracle/", block.chainid, data);
     }
 
@@ -138,12 +163,20 @@ library OracleDeploymentLib {
         uint256 chainId,
         DeploymentData memory data
     ) internal {
-        address proxyAdmin =
-            address(UpgradeableProxyLib.getProxyAdmin(data.oracleServiceManager));
+        address proxyAdmin = address(
+            UpgradeableProxyLib.getProxyAdmin(data.oracleServiceManager)
+        );
 
-        string memory deploymentData = _generateDeploymentJson(data, proxyAdmin);
+        string memory deploymentData = _generateDeploymentJson(
+            data,
+            proxyAdmin
+        );
 
-        string memory fileName = string.concat(outputPath, vm.toString(chainId), ".json");
+        string memory fileName = string.concat(
+            outputPath,
+            vm.toString(chainId),
+            ".json"
+        );
         if (!vm.exists(outputPath)) {
             vm.createDir(outputPath, true);
         }
@@ -159,7 +192,8 @@ library OracleDeploymentLib {
         string memory pathToFile = string.concat(directoryPath, fileName);
 
         require(
-            vm.exists(pathToFile), "OracleDeployment: Deployment Config file does not exist"
+            vm.exists(pathToFile),
+            "OracleDeployment: Deployment Config file does not exist"
         );
 
         string memory json = vm.readFile(pathToFile);
@@ -177,44 +211,49 @@ library OracleDeploymentLib {
         uint256 chainId
     ) internal view returns (DeploymentConfigData memory) {
         return
-            readDeploymentConfigValues(directoryPath, string.concat(vm.toString(chainId), ".json"));
+            readDeploymentConfigValues(
+                directoryPath,
+                string.concat(vm.toString(chainId), ".json")
+            );
     }
 
     function _generateDeploymentJson(
         DeploymentData memory data,
         address proxyAdmin
     ) private view returns (string memory) {
-        return string.concat(
-            '{"lastUpdate":{"timestamp":"',
-            vm.toString(block.timestamp),
-            '","block_number":"',
-            vm.toString(block.number),
-            '"},"addresses":',
-            _generateContractsJson(data, proxyAdmin),
-            "}"
-        );
+        return
+            string.concat(
+                '{"lastUpdate":{"timestamp":"',
+                vm.toString(block.timestamp),
+                '","block_number":"',
+                vm.toString(block.number),
+                '"},"addresses":',
+                _generateContractsJson(data, proxyAdmin),
+                "}"
+            );
     }
 
     function _generateContractsJson(
         DeploymentData memory data,
         address proxyAdmin
     ) private view returns (string memory) {
-        return string.concat(
-            '{"proxyAdmin":"',
-            proxyAdmin.toHexString(),
-            '","oracleServiceManager":"',
-            data.oracleServiceManager.toHexString(),
-            '","oracleServiceManagerImpl":"',
-            data.oracleServiceManager.getImplementation().toHexString(),
-            '","stakeRegistry":"',
-            data.stakeRegistry.toHexString(),
-            '","stakeRegistryImpl":"',
-            data.stakeRegistry.getImplementation().toHexString(),
-            '","strategy":"',
-            data.strategy.toHexString(),
-            '","token":"',
-            data.token.toHexString(),
-            '"}'
-        );
+        return
+            string.concat(
+                '{"proxyAdmin":"',
+                proxyAdmin.toHexString(),
+                '","oracleServiceManager":"',
+                data.oracleServiceManager.toHexString(),
+                '","oracleServiceManagerImpl":"',
+                data.oracleServiceManager.getImplementation().toHexString(),
+                '","stakeRegistry":"',
+                data.stakeRegistry.toHexString(),
+                '","stakeRegistryImpl":"',
+                data.stakeRegistry.getImplementation().toHexString(),
+                '","strategy":"',
+                data.strategy.toHexString(),
+                '","token":"',
+                data.token.toHexString(),
+                '"}'
+            );
     }
 }

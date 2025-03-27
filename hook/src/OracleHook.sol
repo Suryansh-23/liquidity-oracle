@@ -26,38 +26,33 @@ contract OracleHook is BaseHook, Ownable {
     struct PoolMetrics {
         uint256 liqTransition;
         uint256 volatility;
-        uint256 liqTimeToLive;
         uint256 depth;
         uint256 spread;
         uint256 liqConcentration;
     }
 
-    struct LocalRangeParams {
-        int24 tickLower;
-        int24 tickUpper;
+    struct PoolSnapshot {
         int24 lastActiveTick;
         int256 totalLiquidity;
-        int256 lastSnapshotTotalLiquidity;
+        uint256 lastSnapshotTotalLiquidity;
+        uint256 cumulativeLiquidityDelta;
         uint256 lastUpdateTimestamp;
     }
 
-    // TODO: change config
-
-    uint256 constant BPS = 10_000;
-    uint256 constant TICK_SHIFT_THRESHOLD = 100;
-    uint256 constant LIQUIDITY_THRESHOLD = 100;
-    uint256 constant TIME_THRESHOLD = 5 minutes;
-    int24 constant TICK_RANGE_OFFSET = 1_000;
+    uint256 constant PRECISION = 1e18;
+    uint256 constant TICK_SHIFT_THRESHOLD = 5; // 5 Tick shift
+    uint256 constant LIQUIDITY_THRESHOLD = 5e16; // 5% liquidity change
+    uint256 constant TIME_THRESHOLD = 10 seconds;
 
     address public serviceManager;
 
-    mapping(PoolId poolId => mapping(int24 => int256)) public tickLiquidities;
     mapping(PoolId poolId => PoolMetrics) public poolMetrics;
-    mapping(PoolId poolId => LocalRangeParams) public localRanges;
+    mapping(PoolId poolId => PoolSnapshot) public snapshots;
 
     constructor(
-        IPoolManager _poolManager
-    ) BaseHook(_poolManager) Ownable(msg.sender) {}
+        IPoolManager _poolManager,
+        address _owner
+    ) BaseHook(_poolManager) Ownable(_owner) {}
 
     /**
      * @notice sets the service manager address
@@ -113,24 +108,11 @@ contract OracleHook is BaseHook, Ownable {
         uint160,
         int24 tick
     ) internal override returns (bytes4) {
-        int24 tickSpacing = key.tickSpacing;
-
-        int24 tickLower = ((tick - TICK_RANGE_OFFSET) / tickSpacing) *
-            tickSpacing;
-        int24 tickUpper = ((tick + TICK_RANGE_OFFSET) / tickSpacing) *
-            tickSpacing;
-
-        if (tickLower < TickMath.MIN_TICK)
-            tickLower = (TickMath.MIN_TICK / tickSpacing) * tickSpacing;
-        if (tickUpper > TickMath.MAX_TICK)
-            tickUpper = (TickMath.MAX_TICK / tickSpacing) * tickSpacing;
-
-        localRanges[key.toId()] = LocalRangeParams({
-            tickLower: tickLower,
-            tickUpper: tickUpper,
+        snapshots[key.toId()] = PoolSnapshot({
             lastActiveTick: tick,
             totalLiquidity: 0,
             lastSnapshotTotalLiquidity: 0,
+            cumulativeLiquidityDelta: 0,
             lastUpdateTimestamp: block.timestamp
         });
 
@@ -163,21 +145,22 @@ contract OracleHook is BaseHook, Ownable {
         return (this.afterRemoveLiquidity.selector, delta);
     }
 
-    /// @dev updates the local range parameters after a liquidity modification
+    /// @dev updates the pool snapshot after a liquidity modification
     function _afterModifyLiquidity(
         PoolKey calldata key,
         IPoolManager.ModifyLiquidityParams calldata params
     ) internal {
-        LocalRangeParams memory localRange = localRanges[key.toId()];
-        int24 tickLower = params.tickLower < localRange.tickLower
-            ? localRange.tickLower
-            : params.tickLower;
-        int24 tickUpper = params.tickUpper > localRange.tickUpper
-            ? localRange.tickUpper
-            : params.tickUpper;
+        PoolSnapshot memory snapshot = snapshots[key.toId()];
 
-        _updateLocalRangeLiquidity(key, tickLower, tickUpper);
+        snapshot.totalLiquidity += params.liquidityDelta;
+        snapshot.cumulativeLiquidityDelta += params.liquidityDelta.abs();
+
+        snapshots[key.toId()] = snapshot;
+
         if (_isThresholdReached(key)) {
+            snapshots[key.toId()].lastSnapshotTotalLiquidity = uint256(
+                snapshot.totalLiquidity
+            );
             _triggerAVSComputation(key);
         }
     }
@@ -189,31 +172,7 @@ contract OracleHook is BaseHook, Ownable {
         BalanceDelta,
         bytes calldata
     ) internal override returns (bytes4, int128) {
-        LocalRangeParams memory localRange = localRanges[key.toId()];
-
-        _updateLocalRangeLiquidity(
-            key,
-            localRange.tickLower,
-            localRange.tickUpper
-        );
-
-        bool triggerAVSComputation = _isThresholdReached(key);
-
-        int24 activeTick = _getActiveTick(key.toId());
-
-        if (
-            (activeTick / key.tickSpacing) * key.tickSpacing !=
-            (localRange.lastActiveTick / key.tickSpacing) * key.tickSpacing
-        ) {
-            int24 tickLower = ((activeTick - TICK_RANGE_OFFSET) /
-                key.tickSpacing) * key.tickSpacing;
-            int24 tickUpper = ((activeTick + TICK_RANGE_OFFSET) /
-                key.tickSpacing) * key.tickSpacing;
-
-            _updateLocalRangeParams(key, tickLower, tickUpper);
-        }
-
-        if (triggerAVSComputation) _triggerAVSComputation(key);
+        if (_isThresholdReached(key)) _triggerAVSComputation(key);
 
         return (this.afterSwap.selector, 0);
     }
@@ -224,131 +183,21 @@ contract OracleHook is BaseHook, Ownable {
      */
     function _triggerAVSComputation(PoolKey memory key) internal {
         PoolId poolId = key.toId();
-        LocalRangeParams memory localRange = localRanges[poolId];
-        int24 tickLower = localRange.tickLower;
-        int24 tickUpper = localRange.tickUpper;
+        PoolSnapshot memory snapshot = snapshots[poolId];
 
         int24 activeTick = _getActiveTick(poolId);
 
-        localRange.lastActiveTick = activeTick;
-        localRange.lastSnapshotTotalLiquidity = localRange.totalLiquidity;
-        localRange.lastUpdateTimestamp = block.timestamp;
-        localRanges[poolId] = localRange;
+        snapshot.lastActiveTick = activeTick;
+        snapshot.lastUpdateTimestamp = block.timestamp;
+        snapshot.cumulativeLiquidityDelta = 0;
 
-        int24 tickSpacing = key.tickSpacing;
-
-        int24 length = (tickUpper - tickLower) / tickSpacing + 1;
-
-        int256[] memory liquidities = new int256[](uint24(length));
-
-        for (int24 i; i < length; ++i) {
-            liquidities[uint24(i)] = tickLiquidities[poolId][
-                tickLower + i * tickSpacing
-            ];
-        }
+        snapshots[poolId] = snapshot;
 
         IOracleServiceManager(serviceManager).createNewTask(
             PoolId.unwrap(poolId),
-            tickLower,
-            tickUpper,
-            TICK_RANGE_OFFSET,
             activeTick,
-            key.tickSpacing,
-            liquidities
+            key.tickSpacing
         );
-    }
-
-    /**
-     * @dev updates the local range parameters
-     * @param _key the pool key
-     * @param _tickLower the lower tick of the range
-     * @param _tickUpper the upper tick of the range
-     */
-    function _updateLocalRangeParams(
-        PoolKey calldata _key,
-        int24 _tickLower,
-        int24 _tickUpper
-    ) internal {
-        PoolId poolId = _key.toId();
-
-        LocalRangeParams memory localRange = localRanges[poolId];
-
-        int24 tickLower = localRange.tickLower;
-        int24 tickUpper = localRange.tickUpper;
-
-        if (_tickLower > tickLower) {
-            _updateLocalRangeLiquidity(_key, tickUpper, _tickUpper);
-            localRange.totalLiquidity -= _removeTickLiquidities(
-                _key,
-                tickLower,
-                _tickLower
-            );
-        } else {
-            _updateLocalRangeLiquidity(_key, _tickLower, tickLower);
-            localRange.totalLiquidity -= _removeTickLiquidities(
-                _key,
-                _tickUpper,
-                tickUpper
-            );
-        }
-
-        localRange.tickLower = _tickLower;
-        localRange.tickUpper = _tickUpper;
-
-        localRanges[poolId] = localRange;
-    }
-
-    /**
-     * @dev removes the tick liquidity for the given tick range
-     * @param key the pool key
-     * @param tickLower the lower tick of the range
-     * @param tickUpper the upper tick of the range
-     */
-    function _removeTickLiquidities(
-        PoolKey calldata key,
-        int24 tickLower,
-        int24 tickUpper
-    ) internal returns (int256) {
-        PoolId poolId = key.toId();
-
-        int256 liquidity;
-        int256 totalLiquidity;
-
-        for (int24 i = tickLower; i <= tickUpper; i += key.tickSpacing) {
-            liquidity = tickLiquidities[poolId][i];
-            tickLiquidities[poolId][i] = 0;
-            totalLiquidity += liquidity;
-        }
-
-        return totalLiquidity;
-    }
-
-    /**
-     * @dev updates the tick liquidity for the given range
-     * @param key the pool key
-     * @param tickLower the lower tick of the range
-     * @param tickUpper the upper tick of the range
-     */
-    function _updateLocalRangeLiquidity(
-        PoolKey calldata key,
-        int24 tickLower,
-        int24 tickUpper
-    ) internal {
-        int24 tickSpacing = key.tickSpacing;
-        PoolId poolId = key.toId();
-
-        LocalRangeParams memory localRange = localRanges[poolId];
-
-        int128 liquidity;
-
-        for (int24 i = tickLower; i <= tickUpper; i += tickSpacing) {
-            (, liquidity) = poolManager.getTickLiquidity(poolId, i);
-            localRange.totalLiquidity += liquidity;
-            localRange.totalLiquidity -= tickLiquidities[poolId][i];
-            tickLiquidities[poolId][i] = liquidity;
-        }
-
-        localRanges[poolId] = localRange;
     }
 
     /// @notice returns the liquidity transition metric value for the pool
@@ -365,14 +214,6 @@ contract OracleHook is BaseHook, Ownable {
     ) external view returns (uint256 volatility) {
         volatility = poolMetrics[poolId].volatility;
         if (volatility == 0) revert OracleHook__DataNotAvailable();
-    }
-
-    /// @notice returns the liquidity time to live of a pool
-    function getLiquidityTimeToLive(
-        PoolId poolId
-    ) external view returns (uint256 liqTimeToLive) {
-        liqTimeToLive = poolMetrics[poolId].liqTimeToLive;
-        if (liqTimeToLive == 0) revert OracleHook__DataNotAvailable();
     }
 
     /// @notice returns the depth of a pool
@@ -399,28 +240,24 @@ contract OracleHook is BaseHook, Ownable {
     function _isThresholdReached(
         PoolKey calldata key
     ) internal view returns (bool) {
-        LocalRangeParams memory localRange = localRanges[key.toId()];
+        PoolSnapshot memory snapshot = snapshots[key.toId()];
 
         int24 activeTick = _getActiveTick(key.toId());
 
-        if (block.timestamp > localRange.lastUpdateTimestamp + TIME_THRESHOLD)
+        if (block.timestamp > snapshot.lastUpdateTimestamp + TIME_THRESHOLD)
             return true;
 
         if (
-            (int256(activeTick - localRange.lastActiveTick).abs() * BPS) /
-                uint256(int256(2 * TICK_RANGE_OFFSET + 1)) >
+            int256(activeTick - snapshot.lastActiveTick).abs() >
             TICK_SHIFT_THRESHOLD
         ) return true;
 
-        // TODO add liquidity change as a threshold
-
-        //if (localRange.lastSnapshotTotalLiquidity == 0) return true;
-        //else if (
-        //    ((int256(localRange.totalLiquidity) -
-        //        int256(localRange.lastSnapshotTotalLiquidity)).abs() * BPS) /
-        //        localRange.lastSnapshotTotalLiquidity.abs() >
-        //    LIQUIDITY_THRESHOLD
-        //) return true;
+        if (snapshot.lastSnapshotTotalLiquidity == 0) return true;
+        else if (
+            (snapshot.cumulativeLiquidityDelta * PRECISION) /
+                snapshot.lastSnapshotTotalLiquidity >
+            LIQUIDITY_THRESHOLD
+        ) return true;
 
         return false;
     }

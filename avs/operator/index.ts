@@ -23,7 +23,7 @@ const avsDeploymentData = JSON.parse(
   fs.readFileSync(
     path.resolve(
       __dirname,
-      `../contracts/deployments/hello-world/${chainId}.json`
+      `../contracts/deployments/oracle/${chainId}.json`
     ),
     "utf8"
   )
@@ -150,7 +150,7 @@ const signAndRespondToTask = async (taskIndex: number, task: Task) => {
 
   // Sign the task message
   const messageHash = ethers.solidityPackedKeccak256(
-    ["bytes32", "int24", "int24", "int24", "int24"],
+    ["bytes32", "int24", "int24"],
     [task.poolId, task.activeTick, task.tickSpacing]
   );
   const signature = await wallet.signMessage(ethers.getBytes(messageHash));

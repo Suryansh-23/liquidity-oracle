@@ -12,38 +12,45 @@ import {PoolKey} from "v4-core/types/PoolKey.sol";
 import {Currency, CurrencyLibrary} from "v4-core/types/Currency.sol";
 import {V4Quoter} from "v4-periphery/src/lens/V4Quoter.sol";
 import {TickMath} from "v4-core/libraries/TickMath.sol";
-
-import {Deployers} from "@uniswap/v4-core/test/utils/Deployers.sol";
+import {StateView} from "v4-periphery/src/lens/StateView.sol";
+import {PoolId, PoolIdLibrary} from "v4-core/types/PoolId.sol";
 
 import {OracleHook} from "../src/OracleHook.sol";
 import {HookMiner} from "./utils/HookMiner.sol";
 
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 contract DeployOracleHook is Script {
     using CurrencyLibrary for Currency;
+    using PoolIdLibrary for PoolKey;
+
+    uint160 constant SQRT_PRICE_1_1 = 79228162514264337593543950336;
 
     IPoolManager manager;
     PoolModifyLiquidityTest lpRouter;
     PoolSwapTest swapRouter;
+    StateView stateView;
     V4Quoter quoter;
 
     Currency token0;
     Currency token1;
 
     OracleHook hook;
-    uint160 constant SQRT_PRICE_1_1 = 79228162514264337593543950336;
 
     function run() external {
         vm.createSelectFork("http://localhost:8545");
 
-        vm.startBroadcast();
-        deployFreshManagerAndRouters();
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
+
+        vm.startBroadcast(deployerPrivateKey);
+        deployV4Contracts();
         quoter = new V4Quoter(manager);
         deployMintAndApproveCurrencies();
 
-        deployHookToAnvil();
+        deployHookToAnvil(deployer);
 
         PoolKey memory poolKey = PoolKey({
             currency0: token0,
@@ -53,17 +60,53 @@ contract DeployOracleHook is Script {
             hooks: IHooks(hook)
         });
 
+        PoolId poolId = poolKey.toId();
+
         manager.initialize(poolKey, SQRT_PRICE_1_1);
 
         vm.stopBroadcast();
 
-        console.log("Oracle Hook deployed at:", address(hook));
+        string memory json = "deployments.json";
+
+        vm.writeJson(
+            vm.serializeBytes32(json, "poolId", PoolId.unwrap(poolId)),
+            json
+        );
+        vm.writeJson(
+            vm.serializeAddress(json, "oracleHook", address(hook)),
+            json
+        );
+        vm.writeJson(
+            vm.serializeAddress(json, "poolManager", address(manager)),
+            json
+        );
+        vm.writeJson(
+            vm.serializeAddress(json, "liquidityRouter", address(lpRouter)),
+            json
+        );
+        vm.writeJson(
+            vm.serializeAddress(json, "swapRouter", address(swapRouter)),
+            json
+        );
+        vm.writeJson(
+            vm.serializeAddress(json, "stateView", address(stateView)),
+            json
+        );
+        vm.writeJson(
+            vm.serializeAddress(json, "token0", Currency.unwrap(token0)),
+            json
+        );
+        vm.writeJson(
+            vm.serializeAddress(json, "token1", Currency.unwrap(token1)),
+            json
+        );
     }
 
-    function deployFreshManagerAndRouters() internal {
+    function deployV4Contracts() internal {
         manager = IPoolManager(address(new PoolManager(msg.sender)));
         lpRouter = new PoolModifyLiquidityTest(manager);
         swapRouter = new PoolSwapTest(manager);
+        stateView = new StateView(manager);
     }
 
     function deployMintAndApproveCurrencies() internal {
@@ -79,14 +122,9 @@ contract DeployOracleHook is Script {
 
         tokenA.mint(msg.sender, 100_000 ether);
         tokenB.mint(msg.sender, 100_000 ether);
-
-        tokenA.approve(address(lpRouter), type(uint256).max);
-        tokenB.approve(address(lpRouter), type(uint256).max);
-        tokenA.approve(address(swapRouter), type(uint256).max);
-        tokenB.approve(address(swapRouter), type(uint256).max);
     }
 
-    function deployHookToAnvil() internal {
+    function deployHookToAnvil(address owner) internal {
         uint160 flags = uint160(
             Hooks.AFTER_INITIALIZE_FLAG |
                 Hooks.AFTER_SWAP_FLAG |
@@ -97,9 +135,9 @@ contract DeployOracleHook is Script {
             CREATE2_FACTORY,
             flags,
             type(OracleHook).creationCode,
-            abi.encode(address(manager))
+            abi.encode(address(manager), owner)
         );
-        hook = new OracleHook{salt: salt}(manager);
+        hook = new OracleHook{salt: salt}(manager, owner);
         require(address(hook) == hookAddress, "hook: hook address mismatch");
     }
 }

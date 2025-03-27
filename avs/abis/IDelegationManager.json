@@ -27,34 +27,6 @@
   },
   {
     "type": "function",
-    "name": "burnOperatorShares",
-    "inputs": [
-      {
-        "name": "operator",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "strategy",
-        "type": "address",
-        "internalType": "contract IStrategy"
-      },
-      {
-        "name": "prevMaxMagnitude",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "newMaxMagnitude",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "calculateDelegationApprovalDigestHash",
     "inputs": [
       {
@@ -351,7 +323,7 @@
       {
         "name": "approverSignatureAndExpiry",
         "type": "tuple",
-        "internalType": "struct ISignatureUtils.SignatureWithExpiry",
+        "internalType": "struct ISignatureUtilsMixinTypes.SignatureWithExpiry",
         "components": [
           {
             "name": "signature",
@@ -462,6 +434,19 @@
   },
   {
     "type": "function",
+    "name": "domainSeparator",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getDepositedShares",
     "inputs": [
       {
@@ -544,7 +529,7 @@
     ],
     "outputs": [
       {
-        "name": "",
+        "name": "withdrawal",
         "type": "tuple",
         "internalType": "struct IDelegationManagerTypes.Withdrawal",
         "components": [
@@ -584,6 +569,11 @@
             "internalType": "uint256[]"
           }
         ]
+      },
+      {
+        "name": "shares",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
       }
     ],
     "stateMutability": "view"
@@ -884,7 +874,7 @@
       {
         "name": "newOperatorApproverSig",
         "type": "tuple",
-        "internalType": "struct ISignatureUtils.SignatureWithExpiry",
+        "internalType": "struct ISignatureUtilsMixinTypes.SignatureWithExpiry",
         "components": [
           {
             "name": "signature",
@@ -938,6 +928,34 @@
   },
   {
     "type": "function",
+    "name": "slashOperatorShares",
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "strategy",
+        "type": "address",
+        "internalType": "contract IStrategy"
+      },
+      {
+        "name": "prevMaxMagnitude",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "newMaxMagnitude",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "undelegate",
     "inputs": [
       {
@@ -972,6 +990,19 @@
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "version",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "event",
@@ -1057,31 +1088,6 @@
   },
   {
     "type": "event",
-    "name": "OperatorSharesBurned",
-    "inputs": [
-      {
-        "name": "operator",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "strategy",
-        "type": "address",
-        "indexed": false,
-        "internalType": "contract IStrategy"
-      },
-      {
-        "name": "shares",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "OperatorSharesDecreased",
     "inputs": [
       {
@@ -1135,6 +1141,31 @@
       },
       {
         "name": "shares",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OperatorSharesSlashed",
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "strategy",
+        "type": "address",
+        "indexed": false,
+        "internalType": "contract IStrategy"
+      },
+      {
+        "name": "totalSlashedShares",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
