@@ -28,3 +28,6 @@ start-operator:
 
 test:
 	cast send --private-key $(PRIVATE_KEY)
+
+test-modify-liquidity:
+	cd hook && forge script script/ModifyLiquidity.s.sol:ModifyLiquidity --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast

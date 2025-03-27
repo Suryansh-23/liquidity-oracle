@@ -1,7 +1,7 @@
 import { Curve, PRECISION, Vector, VectorPair } from "./types";
 
-export const MIN_TICK = -887272;
-export const MAX_TICK = 887272;
+export const MIN_TICK: bigint = -887272n;
+export const MAX_TICK: bigint = 887272n;
 
 export const MAX_WINDOW_SIZE = 5;
 

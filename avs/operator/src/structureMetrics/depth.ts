@@ -39,7 +39,8 @@ const depth = (
     point[1],
   ]);
 
-  const size = Math.trunc((MAX_TICK - MIN_TICK) / tickSpacing);
+  // Convert bigints to numbers for this calculation
+  const size = Math.trunc((Number(MAX_TICK) - Number(MIN_TICK)) / tickSpacing);
 
   // Calculate weighted sum with exponential decay based on distance
   return distWithDistance.reduce((sum, point) => {

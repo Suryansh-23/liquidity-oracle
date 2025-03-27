@@ -81,7 +81,8 @@ const perTickVolatility = (
   currentTick: number,
   tickSpacing: number
 ): bigint => {
-  const center = Math.trunc((currentTick - MIN_TICK) / tickSpacing);
+  // Convert MIN_TICK to number for subtraction and division
+  const center = Math.trunc((currentTick - Number(MIN_TICK)) / tickSpacing);
   const perTickStd: bigint[] = [];
 
   for (let i = 0; i < snapshots[0].liquidity.length; i++) {

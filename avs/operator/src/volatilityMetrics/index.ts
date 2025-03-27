@@ -113,7 +113,10 @@ export default class Volatility {
     // Calculate entropy with bigint scaling
     const entropyVal = entropyVolatility(this.window);
     // Approximate log calculation for denominator scaling
-    const tickRange = Math.trunc((MAX_TICK - MIN_TICK) / this.tickSpacing);
+    // Convert bigints to numbers for this calculation
+    const tickRange = Math.trunc(
+      (Number(MAX_TICK) - Number(MIN_TICK)) / this.tickSpacing
+    );
     const logScaled = BigInt(
       Math.floor(Math.log(tickRange) * Number(SCALE_FACTOR))
     );
