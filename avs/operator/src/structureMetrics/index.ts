@@ -7,10 +7,10 @@ import spread from "./spread";
 const structureMetrics = (
   dist: Vector<number>,
   currentTick: number,
-  snapshotSize: number
+  tickSpacing: number
 ): StructureMetricResults => {
   const liquiditySpread = toPrecision(spread(dist, currentTick));
-  const liquidityDepth = toPrecision(depth(dist, currentTick, snapshotSize));
+  const liquidityDepth = toPrecision(depth(dist, currentTick, tickSpacing));
   const liquidityConcentration = toPrecision(concentration(dist));
 
   return {

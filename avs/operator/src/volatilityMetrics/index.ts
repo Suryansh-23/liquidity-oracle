@@ -1,12 +1,11 @@
-import computeTransitionDelta from "../transitionMetrics";
 import {
   AggregateHistory,
-  Curve,
+  Vector,
   VolatilityResult,
   VolatilityScores,
   VolatilitySnapshot,
 } from "../types";
-import { curveToVectorPair, toPrecision } from "../utils";
+import { MAX_TICK, MIN_TICK, toPrecision } from "../utils";
 import aggregateVolatility from "./aggregateVolatility";
 
 import entropyVolatility from "./entropyVolatility";
@@ -18,8 +17,8 @@ import transitionVolatility from "./transitionVolatility";
 
 export default class Volatility {
   private maxSize: number;
-  private snapshotSize: number;
-  private latestDistribution: Curve = [];
+  private tickSpacing: number;
+  private latestDistribution: Vector<number> = [];
   private window: VolatilitySnapshot[] = [];
   private prevTransitionVol: number = 0;
 
@@ -31,44 +30,71 @@ export default class Volatility {
     perTickEMX: 0,
   };
 
-  constructor(maxSize: number, snapshotSize: number) {
+  constructor(maxSize: number, tickSpacing: number) {
     this.maxSize = maxSize;
-    this.snapshotSize = snapshotSize;
+    this.tickSpacing = tickSpacing;
   }
 
   /**
    * Add a new liquidity distribution snapshot to the window
    * @param distribution An array representing liquidity distribution across ticks
    */
-  add(distribution: Curve): VolatilityResult | undefined {
-    if (this.window.length >= this.maxSize) {
-      this.window.shift();
-    }
+  add(
+    currentTick: number,
+    distribution: Vector<number>,
+    transition: number
+  ): VolatilityResult {
+    /*
+      s: transition = -1
+      s+1: transition = t_0
+      s+2: transition = t_1
+      .
+      .
+      .
+      s+n: transition = t_n
+    */
+    this.latestDistribution = distribution;
+    if (transition === -1) {
+      this.prevTransitionVol = 0;
+      this.window.push({
+        liquidity: distribution,
+        transition: 0,
+      });
 
-    if (this.latestDistribution) {
-      const vp = curveToVectorPair(this.latestDistribution, distribution);
-      const transition = computeTransitionDelta(vp);
+      return {
+        overall: 0,
+        transition: 0,
+        perTick: 0,
+        entropy: 0,
+        temporal: 0,
+        aggregate: 0,
+      };
+    } else {
+      this.prevTransitionVol = transition;
       this.window.push({
         liquidity: distribution,
         transition,
       });
-    } else {
-      this.window.push({
-        liquidity: distribution,
-      });
-    }
 
-    this.latestDistribution = distribution;
-
-    if (this.window.length >= this.maxSize) {
-      return this.compute();
+      if (this.window.length >= this.maxSize) {
+        return this.compute(currentTick);
+      } else {
+        return {
+          overall: 0,
+          transition: 0,
+          perTick: 0,
+          entropy: 0,
+          temporal: 0,
+          aggregate: 0,
+        };
+      }
     }
   }
 
   /**
    * Compute all scores and return both individual and aggregated results
    */
-  private compute(): VolatilityResult {
+  private compute(currentTick: number): VolatilityResult {
     const { overallVolatility: overall, ...emx } = overallVolatility(
       this.window,
       this.aggHistory
@@ -81,12 +107,13 @@ export default class Volatility {
     this.prevTransitionVol = transition;
 
     const [perTick, perTickEMX] = ewmx(
-      perTickVolatility(this.window, this.snapshotSize),
+      perTickVolatility(this.window, currentTick, this.tickSpacing),
       this.aggHistory.perTickEMX
     );
 
     const entropy = toPrecision(
-      entropyVolatility(this.window) / Math.log(this.snapshotSize)
+      entropyVolatility(this.window) /
+        Math.log(Math.trunc((MAX_TICK - MIN_TICK) / this.tickSpacing))
     );
 
     const temporal = temporalDependence(this.window);
@@ -121,7 +148,7 @@ export default class Volatility {
   /*
    * Get the latest distribution from the window
    */
-  getLatestSnapshot(): Curve {
+  getLatestSnapshot(): Vector<number> {
     return this.latestDistribution;
   }
 

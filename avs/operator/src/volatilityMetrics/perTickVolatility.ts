@@ -1,5 +1,6 @@
 import { standardDeviation } from "simple-statistics";
 import { VolatilitySnapshot } from "../types";
+import { MIN_TICK } from "../utils";
 
 /*
  * Get Weight for a tickIndex
@@ -16,9 +17,10 @@ const getWeight = (tickIndex: number, center: number): number => {
  */
 const perTickVolatility = (
   snapshots: VolatilitySnapshot[],
-  snapshotSize: number
+  currentTick: number,
+  tickSpacing: number
 ): number => {
-  const center = Math.floor(snapshotSize / 2);
+  const center = Math.trunc((currentTick - MIN_TICK) / tickSpacing);
   const perTickStd: number[] = [];
 
   for (let i = 0; i < snapshots.length; i++) {

@@ -1,5 +1,10 @@
 import { Curve, PRECISION, Vector, VectorPair } from "./types";
 
+export const MIN_TICK = -887272;
+export const MAX_TICK = 887272;
+
+export const MAX_WINDOW_SIZE = 5;
+
 export const distributionToCurve = (
   distribution: number[],
   start: number,

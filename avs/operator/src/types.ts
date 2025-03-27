@@ -34,7 +34,7 @@ export interface ComputeResults {
 // Volatility-specific types
 export interface VolatilitySnapshot {
   liquidity: Vector<number>;
-  transition?: number;
+  transition: number;
 }
 
 export interface VolatilityScores {
@@ -74,4 +74,9 @@ export interface StructureMetricResults {
   liquidityConcentration: number;
   liquidityDepth: number;
   liquiditySpread: number;
+}
+
+export interface LiquidityMetricsResult {
+  volatility: VolatilityResult;
+  structure: StructureMetricResults;
 }
