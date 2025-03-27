@@ -12,14 +12,14 @@ async function initializeComponents() {
 
   // Ensure data directory exists
   try {
-    mkdirSync(path.join(__dirname, "../data"), { recursive: true });
+    mkdirSync(path.join(__dirname, "../../events"), { recursive: true });
   } catch (error) {
-    Logger.error("Error creating data directory:", error);
+    Logger.error("Error creating events directory:", error);
     process.exit(1);
   }
 
   // Initialize database
-  const dbPath = path.join(__dirname, `../data/${config.networkName}.db`);
+  const dbPath = path.join(__dirname, `../events/${config.networkName}.db`);
   const dbManager = new DatabaseManager(dbPath);
 
   // Initialize event processor
