@@ -102,7 +102,7 @@ class LiquidityCurve {
     const currentTickIdx = Math.trunc(MAX_TICK / tickSpacing);
     for (let i = currentTickIdx + 1; i < ticks.length; i++) {
       const tick = ticks[i];
-      const liquidity = JSBI.add(prevLiq, tick.liquidityNet);
+      const liquidity = JSBI.subtract(prevLiq, tick.liquidityNet);
 
       dist.push([tick.tickIdx, Number(liquidity)]);
       prevLiq = liquidity;
@@ -111,7 +111,7 @@ class LiquidityCurve {
     prevLiq = liquidity;
     for (let i = currentTickIdx - 1; i >= 0; i--) {
       const tick = ticks[i];
-      const liquidity = JSBI.add(prevLiq, tick.liquidityNet);
+      const liquidity = JSBI.subtract(prevLiq, tick.liquidityNet);
 
       dist.unshift([tick.tickIdx, Number(liquidity)]);
       prevLiq = liquidity;

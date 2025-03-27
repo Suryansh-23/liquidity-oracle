@@ -89,8 +89,6 @@ const avsDirectory = new ethers.Contract(
 
 interface Task {
   poolId: string;
-  tickLower: number;
-  tickUpper: number;
   tickSpacing: number;
   activeTick: number;
 }
@@ -153,13 +151,7 @@ const signAndRespondToTask = async (taskIndex: number, task: Task) => {
   // Sign the task message
   const messageHash = ethers.solidityPackedKeccak256(
     ["bytes32", "int24", "int24", "int24", "int24"],
-    [
-      task.poolId,
-      task.tickLower,
-      task.tickUpper,
-      task.activeTick,
-      task.tickSpacing,
-    ]
+    [task.poolId, task.activeTick, task.tickSpacing]
   );
   const signature = await wallet.signMessage(ethers.getBytes(messageHash));
   console.log(`Signing and responding to task ${taskIndex}`);
@@ -252,8 +244,6 @@ const monitorNewTasks = async () => {
 
       const taskObj = {
         poolId: task.poolId,
-        tickLower: task.tickLower,
-        tickUpper: task.tickUpper,
         tickSpacing: task.tickSpacing,
         activeTick: task.activeTick,
       };
