@@ -96,7 +96,9 @@ class LiquidityCurve {
     ticks: Tick[],
     liquidity: JSBI
   ): Vector<number> {
-    const dist: Vector<number> = [[currentTick, Number(liquidity)]];
+    const dist: Vector<number> = [
+      [BigInt(currentTick), BigInt(liquidity.toString())],
+    ];
     let prevLiq = liquidity;
 
     const currentTickIdx = Math.trunc(MAX_TICK / tickSpacing);
@@ -104,7 +106,7 @@ class LiquidityCurve {
       const tick = ticks[i];
       const liquidity = JSBI.subtract(prevLiq, tick.liquidityNet);
 
-      dist.push([tick.tickIdx, Number(liquidity)]);
+      dist.push([BigInt(tick.tickIdx), BigInt(liquidity.toString())]);
       prevLiq = liquidity;
     }
 
@@ -113,7 +115,7 @@ class LiquidityCurve {
       const tick = ticks[i];
       const liquidity = JSBI.subtract(prevLiq, tick.liquidityNet);
 
-      dist.unshift([tick.tickIdx, Number(liquidity)]);
+      dist.unshift([BigInt(tick.tickIdx), BigInt(liquidity.toString())]);
       prevLiq = liquidity;
     }
 
