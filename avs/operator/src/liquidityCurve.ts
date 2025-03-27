@@ -41,8 +41,8 @@ class LiquidityCurve {
       transport: http(),
     });
     this.abi = parseAbi([
-      "function getTickLiquidity(byte32 poolId, int24 tick) external view returns (uint128 liquidityGross, int128 liquidityNet)",
-      "function getLiquidity(byte32 poolId) external view returns (uint128 liquidity)",
+      "function getTickLiquidity(bytes32 poolId, int24 tick) external view returns (uint128 liquidityGross, int128 liquidityNet)",
+      "function getLiquidity(bytes32 poolId) external view returns (uint128 liquidity)",
     ]);
   }
 

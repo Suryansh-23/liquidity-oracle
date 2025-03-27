@@ -50,8 +50,9 @@ contract OracleHook is BaseHook, Ownable {
     mapping(PoolId poolId => PoolSnapshot) public snapshots;
 
     constructor(
-        IPoolManager _poolManager
-    ) BaseHook(_poolManager) Ownable(msg.sender) {}
+        IPoolManager _poolManager,
+        address _owner
+    ) BaseHook(_poolManager) Ownable(_owner) {}
 
     /**
      * @notice sets the service manager address
