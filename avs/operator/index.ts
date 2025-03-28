@@ -21,10 +21,7 @@ let chainId = 31337;
 
 const avsDeploymentData = JSON.parse(
   fs.readFileSync(
-    path.resolve(
-      __dirname,
-      `../contracts/deployments/oracle/${chainId}.json`
-    ),
+    path.resolve(__dirname, `../contracts/deployments/oracle/${chainId}.json`),
     "utf8"
   )
 );
@@ -149,29 +146,35 @@ const signAndRespondToTask = async (taskIndex: number, task: Task) => {
   };
 
   // Sign the task message
-  const messageHash = ethers.solidityPackedKeccak256(
-    ["bytes32", "int24", "int24"],
-    [task.poolId, task.activeTick, task.tickSpacing]
-  );
-  const signature = await wallet.signMessage(ethers.getBytes(messageHash));
+  const domain = {
+    name: "LiquidityOracle",
+    version: "1",
+    chainId: chainId,
+    verifyingContract: oracleServiceManagerAddress,
+  };
+
+  const types = {
+    Task: [
+      { name: "poolId", type: "bytes32" },
+      { name: "activeTick", type: "int24" },
+      { name: "tickSpacing", type: "int24" },
+    ],
+  };
+
+  const value = {
+    poolId: task.poolId,
+    activeTick: task.activeTick,
+    tickSpacing: task.tickSpacing,
+  };
+
+  const signature = await wallet.signTypedData(domain, types, value);
   console.log(`Signing and responding to task ${taskIndex}`);
 
-  const operators = [await wallet.getAddress()];
-  const signatures = [signature];
-  const signedTask = ethers.AbiCoder.defaultAbiCoder().encode(
-    ["address[]", "bytes[]", "uint32"],
-    [
-      operators,
-      signatures,
-      ethers.toBigInt((await provider.getBlockNumber()) - 1),
-    ]
-  );
-
   const tx = await oracleServiceManager.respondToTask(
-    task,
+    value,
     taskIndex,
     solPoolMetrics,
-    signedTask
+    signature
   );
   await tx.wait();
   console.log(`Responded to task.`);
@@ -192,7 +195,7 @@ const registerOperator = async () => {
   }
 
   const salt = ethers.hexlify(ethers.randomBytes(32));
-  const expiry = Math.floor(Date.now() / 1000) + 3600; // Example expiry, 1 hour from now
+  const expiry = Math.floor(Date.now() / 1000) + 180; // Example expiry, 3 minutes from now
 
   // Define the output structure
   let operatorSignatureWithSaltAndExpiry = {
@@ -244,8 +247,8 @@ const monitorNewTasks = async () => {
 
       const taskObj = {
         poolId: task.poolId,
-        tickSpacing: task.tickSpacing,
-        activeTick: task.activeTick,
+        tickSpacing: Number(task.tickSpacing),
+        activeTick: Number(task.activeTick),
       };
 
       await signAndRespondToTask(taskIndex, taskObj);

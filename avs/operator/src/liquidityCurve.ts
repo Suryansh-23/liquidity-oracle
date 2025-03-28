@@ -8,7 +8,7 @@ import {
 } from "viem";
 import { anvil } from "viem/chains";
 import { Vector } from "./types";
-import { MAX_TICK, MIN_TICK } from "./utils";
+import { MIN_TICK } from "./utils";
 
 interface TickLiquidity {
   liquidityGross: bigint; // uint128
@@ -23,6 +23,8 @@ interface Tick {
 
 // The multicall response would be an array of these tuples
 type MultiCallResponse = TickLiquidity[];
+
+const K = 1_100;
 
 class LiquidityCurve {
   stateViewAddress: Hex;
@@ -59,41 +61,61 @@ class LiquidityCurve {
     currentTick: number,
     tickSpacing: number
   ): Promise<Vector<number>> {
-    const tickSpacingB = BigInt(tickSpacing);
+    console.log(typeof currentTick, currentTick);
+    console.log(typeof tickSpacing, tickSpacing);
+    console.log(typeof K, K);
 
     const ticks = Array.from(
-      // Convert bigints to numbers for this calculation
       {
-        length: Math.trunc(
-          (Number(MAX_TICK) - Number(MIN_TICK)) / Number(tickSpacingB) + 1
-        ),
+        length: Math.trunc(2 * K + 1),
       },
-      (_, i) => Number(MIN_TICK) + i * Number(tickSpacingB) // Convert MIN_TICK to number
+      (_, i) => currentTick + (i - K) * tickSpacing
     );
 
-    const [res, poolLiquidity] = await Promise.all([
-      this.client.multicall({
-        allowFailure: false,
-        contracts: ticks.map((tick) => ({
+    const contractCalls = ticks.map(
+      async (tick: number) =>
+        await this.client.readContract({
           address: this.stateViewAddress,
           abi: this.abi,
           functionName: "getTickLiquidity",
-          args: [poolAddress, tick],
-        })),
-      }) as unknown as MultiCallResponse,
+          args: [poolAddress, BigInt(tick)],
+        })
+    );
+
+    const [tickResults, poolLiquidity] = await Promise.all([
+      Promise.all(contractCalls),
       this.getPoolLiquidity(poolAddress),
     ]);
+    console.log("tickResults:", tickResults);
+
+    const res = tickResults as MultiCallResponse;
+    console.log("res: ", res);
 
     const poolLiquidityBigInt = BigInt(poolLiquidity);
+    console.log("pool Liquidity: ", poolLiquidity, poolLiquidityBigInt);
+
+    // res.forEach((tick, i) => {
+    //   if (
+    //     tick.liquidityGross === undefined ||
+    //     tick.liquidityNet === undefined
+    //   ) {
+    //     console.error(
+    //       `Error: Missing liquidity data for tick ${ticks[i]} at index ${i}`
+    //     );
+    //   }
+    // });
 
     return this.compute(
       currentTick,
-      tickSpacing,
       res.map((tick, i) => ({
         // Convert MIN_TICK to number for calculation
         tickIdx: Number(MIN_TICK) + i * tickSpacing,
-        liquidityGross: tick.liquidityGross,
-        liquidityNet: tick.liquidityNet,
+        liquidityGross: BigInt(
+          tick.liquidityGross === undefined ? 0 : tick.liquidityGross
+        ),
+        liquidityNet: BigInt(
+          tick.liquidityNet === undefined ? 0 : tick.liquidityNet
+        ),
       })),
       poolLiquidityBigInt
     );
@@ -101,16 +123,13 @@ class LiquidityCurve {
 
   private compute(
     currentTick: number,
-    tickSpacing: number,
     ticks: Tick[],
     liquidity: bigint
   ): Vector<number> {
     const dist: Vector<number> = [[BigInt(currentTick), liquidity]];
     let prevLiq = liquidity;
 
-    // Convert MAX_TICK to number for division
-    const currentTickIdx = Math.trunc(Number(MAX_TICK) / tickSpacing);
-    for (let i = currentTickIdx + 1; i < ticks.length; i++) {
+    for (let i = K + 2; i < ticks.length; i++) {
       const tick = ticks[i];
       const currentLiquidity = prevLiq - tick.liquidityNet;
       dist.push([BigInt(tick.tickIdx), currentLiquidity]);
@@ -118,7 +137,7 @@ class LiquidityCurve {
     }
 
     prevLiq = liquidity;
-    for (let i = currentTickIdx - 1; i >= 0; i--) {
+    for (let i = K; i >= 0; i--) {
       const tick = ticks[i];
       const currentLiquidity = prevLiq - tick.liquidityNet;
       dist.unshift([BigInt(tick.tickIdx), currentLiquidity]);
