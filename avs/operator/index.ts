@@ -146,32 +146,16 @@ const signAndRespondToTask = async (taskIndex: number, task: Task) => {
   };
 
   // Sign the task message
-  const domain = {
-    name: "LiquidityOracle",
-    version: "1",
-    chainId: chainId,
-    verifyingContract: oracleServiceManagerAddress,
-  };
+  const messageHash = ethers.solidityPackedKeccak256(
+    ["bytes32", "int24", "int24"],
+    [task.poolId, task.activeTick, task.tickSpacing]
+  );
+  const signature = await wallet.signMessage(ethers.getBytes(messageHash));
 
-  const types = {
-    Task: [
-      { name: "poolId", type: "bytes32" },
-      { name: "activeTick", type: "int24" },
-      { name: "tickSpacing", type: "int24" },
-    ],
-  };
-
-  const value = {
-    poolId: task.poolId,
-    activeTick: task.activeTick,
-    tickSpacing: task.tickSpacing,
-  };
-
-  const signature = await wallet.signTypedData(domain, types, value);
   console.log(`Signing and responding to task ${taskIndex}`);
 
   const tx = await oracleServiceManager.respondToTask(
-    value,
+    task,
     taskIndex,
     solPoolMetrics,
     signature

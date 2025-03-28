@@ -29,10 +29,13 @@ contract ModifyLiquidity is Script {
         token1 = _token1;
         hook = _hook;
 
-        vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
 
-        MockERC20(token0).mint(address(this), 1_000_000 ether);
-        MockERC20(token1).mint(address(this), 1_000_000 ether);
+        vm.startBroadcast(deployerPrivateKey);
+
+        MockERC20(token0).mint(deployer, 1_000_000 ether);
+        MockERC20(token1).mint(deployer, 1_000_000 ether);
 
         MockERC20(token0).approve(address(lpRouter), type(uint256).max);
         MockERC20(token1).approve(address(lpRouter), type(uint256).max);
@@ -46,12 +49,12 @@ contract ModifyLiquidity is Script {
                 hooks: IHooks(hook)
             }),
             IPoolManager.ModifyLiquidityParams({
-                tickLower: -887270,
-                tickUpper: 887270,
-                liquidityDelta: 100000,
+                tickLower: -10000,
+                tickUpper: 10000,
+                liquidityDelta: 100000000,
                 salt: bytes32(0)
             }),
-            ""
+            new bytes(0)
         );
 
         vm.stopBroadcast();

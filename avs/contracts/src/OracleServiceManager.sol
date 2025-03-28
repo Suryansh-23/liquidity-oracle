@@ -91,7 +91,9 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
             revert OracleServiceManager__AlreadyResponded();
 
         // The message that was signed
-        bytes32 messageHash = keccak256(abi.encode(task));
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(task.poolId, task.activeTick, task.tickSpacing)
+        );
         bytes32 ethSignedMessageHash = messageHash.toEthSignedMessageHash();
         bytes4 magicValue = IERC1271Upgradeable.isValidSignature.selector;
         if (

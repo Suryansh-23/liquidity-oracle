@@ -103,7 +103,7 @@ contract DeployOracleHook is Script {
             json
         );
         vm.writeJson(
-            vm.serializeAddress(json, "modifyLiquidityTest", address(liquidityRouter)),
+            vm.serializeAddress(json, "mockModifyLiquidity", address(liquidityRouter)),
             json
         );
     }
