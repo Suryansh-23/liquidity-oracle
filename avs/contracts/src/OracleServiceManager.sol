@@ -71,7 +71,11 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         });
 
         allTaskHashes[latestTaskNum] = keccak256(abi.encode(task));
+
+        console.log("Creating new task");
+        console.logBytes32(poolId);
         emit NewTaskCreated(latestTaskNum, task);
+        console.log("Task created");
 
         ++latestTaskNum;
     }

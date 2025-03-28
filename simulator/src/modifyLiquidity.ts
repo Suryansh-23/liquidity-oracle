@@ -12,6 +12,8 @@ import { sanitizeTickRange } from "./utils";
 
 config();
 
+console.log(process.env);
+
 // Load environment variables
 const key = process.env.PRIVATE_KEY;
 if (!key) {
@@ -25,6 +27,49 @@ const account = privateKeyToAccount(key as `0x${string}`);
 const publicClient = createPublicClient({
   chain: anvil,
   transport: http(),
+});
+
+publicClient.watchContractEvent({
+  address: "0xb0d4afd8879ed9f52b28595d31b441d079b2ca07",
+  abi: [
+    {
+      type: "event",
+      name: "NewTaskCreated",
+      inputs: [
+        {
+          name: "taskIndex",
+          type: "uint32",
+          indexed: true,
+          internalType: "uint32",
+        },
+        {
+          name: "task",
+          type: "tuple",
+          indexed: false,
+          internalType: "struct OracleServiceManager.Task",
+          components: [
+            {
+              name: "poolId",
+              type: "bytes32",
+              internalType: "bytes32",
+            },
+            {
+              name: "activeTick",
+              type: "int24",
+              internalType: "int24",
+            },
+            {
+              name: "tickSpacing",
+              type: "int24",
+              internalType: "int24",
+            },
+          ],
+        },
+      ],
+      anonymous: false,
+    },
+  ] as const,
+  onLogs: (logs) => console.log("New task created:", logs),
 });
 
 const walletClient = createWalletClient({
@@ -64,6 +109,11 @@ const modifyLiquidity = async (
       abi,
       functionName: "modifyLiquidity",
       args: [sanitizedTickLower, sanitizedTickUpper, liquidityDelta],
+      // nonce:
+      //   (await publicClient.getTransactionCount({ address: account.address })) +
+      //   1 +
+      //   Math.trunc(Math.random() * 1000),
+      chain: anvil,
     });
 
     console.log(`Modified liquidity with hash: ${hash}`);

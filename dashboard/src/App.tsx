@@ -1,94 +1,82 @@
-import DashboardLayout from "./components/layout/DashboardLayout";
-import MetricCard from "./components/ui/MetricCard";
-import MetricChart from "./components/charts/MetricChart";
+import { usePoolMetrics, formatMetric } from "./lib/hooks";
+import { MetricCard } from "./components/MetricCard";
 
-// Sample data - will be replaced with real data later
-const sampleTimeSeriesData = Array.from({ length: 24 }, (_, i) => ({
-  timestamp: Date.now() - (23 - i) * 3600000,
-  value: Math.random() * 100,
-}));
+const ORACLE_ADDRESS = import.meta.env.VITE_ORACLE_ADDRESS;
+
+if (!ORACLE_ADDRESS) {
+  throw new Error("VITE_ORACLE_ADDRESS not set in environment");
+}
+
+const METRIC_COLORS = {
+  liqTransition: "#4f46e5", // Indigo
+  volatility: "#dc2626", // Red
+  depth: "#059669", // Green
+  spread: "#9333ea", // Purple
+  liqConcentration: "#0891b2", // Cyan
+};
 
 export default function App() {
+  const { current: metrics, history } = usePoolMetrics(ORACLE_ADDRESS);
+
   return (
-    <DashboardLayout>
-      {/* Metrics Overview */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <MetricCard
-          title="Liquidity Transition"
-          value="87.5K"
-          change={2.5}
-          timestamp={new Date()}
-        />
-        <MetricCard
-          title="Volatility"
-          value="12.3%"
-          change={-1.8}
-          timestamp={new Date()}
-        />
-        <MetricCard
-          title="Market Depth"
-          value="245.8K"
-          change={5.2}
-          timestamp={new Date()}
-        />
-        <MetricCard
-          title="Spread"
-          value="0.15%"
-          change={-0.02}
-          timestamp={new Date()}
-        />
-        <MetricCard
-          title="Liquidity Concentration"
-          value="68%"
-          change={3.1}
-          timestamp={new Date()}
-        />
-      </div>
-
-      {/* Charts */}
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-0 overflow-hidden">
-          <MetricChart
-            title="Liquidity Transition Over Time"
-            data={sampleTimeSeriesData}
-            color="#60a5fa"
-          />
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white shadow">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            Liquidity Oracle Dashboard
+          </h1>
         </div>
-        <div className="card p-0 overflow-hidden">
-          <MetricChart
-            title="Volatility Over Time"
-            data={sampleTimeSeriesData}
-            color="#f87171"
-          />
+      </header>
+      <main>
+        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {metrics && (
+              <>
+                <MetricCard
+                  title="Liquidity Transition"
+                  value={formatMetric(metrics.liqTransition)}
+                  description="Measures the rate of liquidity changes"
+                  history={history.liqTransition}
+                  color={METRIC_COLORS.liqTransition}
+                />
+                <MetricCard
+                  title="Volatility"
+                  value={formatMetric(metrics.volatility)}
+                  description="Current market volatility metric"
+                  history={history.volatility}
+                  color={METRIC_COLORS.volatility}
+                />
+                <MetricCard
+                  title="Market Depth"
+                  value={formatMetric(metrics.depth)}
+                  description="Available liquidity depth in the market"
+                  history={history.depth}
+                  color={METRIC_COLORS.depth}
+                />
+                <MetricCard
+                  title="Spread"
+                  value={formatMetric(metrics.spread)}
+                  description="Current bid-ask spread"
+                  history={history.spread}
+                  color={METRIC_COLORS.spread}
+                />
+                <MetricCard
+                  title="Liquidity Concentration"
+                  value={formatMetric(metrics.liqConcentration)}
+                  description="Measure of liquidity distribution"
+                  history={history.liqConcentration}
+                  color={METRIC_COLORS.liqConcentration}
+                />
+              </>
+            )}
+            {!metrics && (
+              <div className="col-span-full text-center py-10">
+                <p className="text-gray-500">Waiting for metrics update...</p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-0 overflow-hidden">
-          <MetricChart
-            title="Market Depth Over Time"
-            data={sampleTimeSeriesData}
-            color="#34d399"
-          />
-        </div>
-        <div className="card p-0 overflow-hidden">
-          <MetricChart
-            title="Spread Analysis"
-            data={sampleTimeSeriesData}
-            color="#fbbf24"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <div className="card p-0 overflow-hidden">
-          <MetricChart
-            title="Liquidity Concentration Distribution"
-            data={sampleTimeSeriesData}
-            color="#a78bfa"
-          />
-        </div>
-      </div>
-    </DashboardLayout>
+      </main>
+    </div>
   );
 }
