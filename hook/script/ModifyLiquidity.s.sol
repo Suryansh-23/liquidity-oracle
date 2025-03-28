@@ -58,9 +58,9 @@ contract ModifyLiquidity is Script {
                 hooks: IHooks(hook)
             }),
             IPoolManager.ModifyLiquidityParams({
-                tickLower: -887270,
-                tickUpper: 887270,
-                liquidityDelta: 9999997796809,
+                tickLower: -1000,
+                tickUpper: 1000,
+                liquidityDelta: 99997796809,
                 salt: bytes32(0)
             }),
             ""

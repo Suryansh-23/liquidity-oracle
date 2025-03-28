@@ -21,10 +21,7 @@ let chainId = 31337;
 
 const avsDeploymentData = JSON.parse(
   fs.readFileSync(
-    path.resolve(
-      __dirname,
-      `../contracts/deployments/oracle/${chainId}.json`
-    ),
+    path.resolve(__dirname, `../contracts/deployments/oracle/${chainId}.json`),
     "utf8"
   )
 );
@@ -192,7 +189,7 @@ const registerOperator = async () => {
   }
 
   const salt = ethers.hexlify(ethers.randomBytes(32));
-  const expiry = Math.floor(Date.now() / 1000) + 3600; // Example expiry, 1 hour from now
+  const expiry = Math.floor(Date.now() / 1000) + 180; // Example expiry, 3 minutes from now
 
   // Define the output structure
   let operatorSignatureWithSaltAndExpiry = {
@@ -244,8 +241,8 @@ const monitorNewTasks = async () => {
 
       const taskObj = {
         poolId: task.poolId,
-        tickSpacing: task.tickSpacing,
-        activeTick: task.activeTick,
+        tickSpacing: Number(task.tickSpacing),
+        activeTick: Number(task.activeTick),
       };
 
       await signAndRespondToTask(taskIndex, taskObj);

@@ -10,23 +10,22 @@ const concentration = (dist: Vector<number>): bigint => {
   const normalizedWeights = sumNormalize(dist);
   const n = BigInt(dist.length);
 
-  // Calculate sum of squares using bigint
+  // Calculate sum of squares using bigint with scaling
+  const scaleFactor = 10000n;
   const sumSquares = normalizedWeights.reduce(
-    (sum, point) => sum + point[1] * point[1],
+    (sum, point) => sum + point[1] * scaleFactor * (point[1] * scaleFactor),
     0n
   );
 
   // Calculate using bigint arithmetic with proper scaling for decimal precision
-  // Using 10000n as scaling factor for 4 decimal places
-  const scaleFactor = 10000n;
-  const oneOverN = scaleFactor / n;
-  const oneMinusOneOverN = scaleFactor - oneOverN;
+  const oneOverN = (scaleFactor * scaleFactor) / n;
+  const oneMinusOneOverN = scaleFactor * scaleFactor - oneOverN;
 
-  // HHI calculation: 1 - (sumSquares - 1/n) / (1 - 1/n)
-  const numerator = sumSquares * scaleFactor - oneOverN;
+  // HHI calculation: (sumSquares - oneOverN) / oneMinusOneOverN
+  const numerator = sumSquares - oneOverN;
   const denominator = oneMinusOneOverN;
 
-  return scaleFactor - numerator / denominator;
+  return numerator / denominator;
 };
 
 export default concentration;
