@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+import {console} from "forge-std/console.sol";
 import {PoolKey} from "v4-core/types/PoolKey.sol";
 import {Currency} from "v4-core/types/Currency.sol";
 import {PoolModifyLiquidityTest} from "v4-core/test/PoolModifyLiquidityTest.sol";
@@ -45,8 +46,9 @@ contract MockLiquidityRouter {
     function modifyLiquidity(
         int24 tickLower,
         int24 tickUpper,
-        int128 liquidityDelta
+        int256 liquidityDelta
     ) external {
+        console.log("Modifying liquidity called inside Router");
         IPoolManager.ModifyLiquidityParams memory params = IPoolManager
             .ModifyLiquidityParams({
                 tickLower: tickLower,
@@ -55,6 +57,7 @@ contract MockLiquidityRouter {
                 salt: bytes32(0)
             });
 
-        poolModifyLiquidityTest.modifyLiquidity(poolKey, params, "");
+        console.log("Calling modifyLiquidity from core");
+        poolModifyLiquidityTest.modifyLiquidity(poolKey, params, new bytes(0));
     }
 }

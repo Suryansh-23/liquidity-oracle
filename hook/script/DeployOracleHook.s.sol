@@ -50,9 +50,19 @@ contract DeployOracleHook is Script {
         deployV4Contracts();
         quoter = new V4Quoter(manager);
 
-        deployMintCurrenciesAndLiquidityRouter();
+        MockERC20 tokenA = new MockERC20("MockA", "A", 18);
+        MockERC20 tokenB = new MockERC20("MockB", "B", 18);
+        if (uint160(address(tokenA)) < uint160(address(tokenB))) {
+            token0 = Currency.wrap(address(tokenA));
+            token1 = Currency.wrap(address(tokenB));
+        } else {
+            token0 = Currency.wrap(address(tokenB));
+            token1 = Currency.wrap(address(tokenA));
+        }
 
         deployHookToAnvil(deployer);
+
+        deployMintCurrenciesAndLiquidityRouter();
 
         PoolKey memory poolKey = PoolKey({
             currency0: token0,
@@ -103,7 +113,11 @@ contract DeployOracleHook is Script {
             json
         );
         vm.writeJson(
-            vm.serializeAddress(json, "mockModifyLiquidity", address(liquidityRouter)),
+            vm.serializeAddress(
+                json,
+                "mockModifyLiquidity",
+                address(liquidityRouter)
+            ),
             json
         );
     }
@@ -116,16 +130,6 @@ contract DeployOracleHook is Script {
     }
 
     function deployMintCurrenciesAndLiquidityRouter() internal {
-        MockERC20 tokenA = new MockERC20("MockA", "A", 18);
-        MockERC20 tokenB = new MockERC20("MockB", "B", 18);
-        if (uint160(address(tokenA)) < uint160(address(tokenB))) {
-            token0 = Currency.wrap(address(tokenA));
-            token1 = Currency.wrap(address(tokenB));
-        } else {
-            token0 = Currency.wrap(address(tokenB));
-            token1 = Currency.wrap(address(tokenA));
-        }
-
         liquidityRouter = new MockLiquidityRouter(
             Currency.unwrap(token0),
             Currency.unwrap(token1),
@@ -135,8 +139,14 @@ contract DeployOracleHook is Script {
             address(lpRouter)
         );
 
-        tokenA.mint(address(liquidityRouter), 100_000_000 ether);
-        tokenB.mint(address(liquidityRouter), 100_000_000 ether);
+        MockERC20(Currency.unwrap(token0)).mint(
+            address(liquidityRouter),
+            100_000_000 ether
+        );
+        MockERC20(Currency.unwrap(token1)).mint(
+            address(liquidityRouter),
+            100_000_000 ether
+        );
     }
 
     function deployHookToAnvil(address owner) internal {

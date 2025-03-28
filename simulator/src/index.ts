@@ -8,7 +8,7 @@ config();
 
 const dbPath = path.join(
   __dirname,
-  `../events/${process.env.NETWORK_NAME!}.db`
+  `../../events/${process.env.NETWORK_NAME!}.db`
 );
 
 async function main() {
@@ -19,8 +19,11 @@ async function main() {
   const eventsIterator = dbManager.getLiquidityEventsIterator();
 
   // Get interval and tickSpacing from env or use defaults
-  const interval = parseInt(process.env.INTERVAL || "2000"); // default 5 seconds
+  const interval = parseInt(process.env.INTERVAL || "5000"); // default 5 seconds
   const tickSpacing = parseInt(process.env.TICK_SPACING || "10"); // default 10
+
+  let consecutiveFailures = 0;
+  const MAX_CONSECUTIVE_FAILURES = 10;
 
   for (const event of eventsIterator) {
     try {
@@ -32,11 +35,22 @@ async function main() {
         tickSpacing
       );
 
+      // Reset consecutive failures counter on success
+      consecutiveFailures = 0;
+
       // Wait for specified interval
       await new Promise((resolve) => setTimeout(resolve, interval));
     } catch (error) {
       console.error("Error processing event:", error);
-      // Continue with next event even if current one fails
+      consecutiveFailures++;
+
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+        console.error(
+          `Breaking loop after ${MAX_CONSECUTIVE_FAILURES} consecutive failures`
+        );
+        break;
+      }
+      // Continue with next event
       continue;
     }
   }

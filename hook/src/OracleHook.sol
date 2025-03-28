@@ -133,6 +133,7 @@ contract OracleHook is BaseHook, Ownable {
         BalanceDelta,
         bytes calldata
     ) internal override returns (bytes4, BalanceDelta) {
+        console.log("afterAddLiquidity");
         _afterModifyLiquidity(key, params);
 
         return (this.afterAddLiquidity.selector, delta);
@@ -146,6 +147,7 @@ contract OracleHook is BaseHook, Ownable {
         BalanceDelta,
         bytes calldata
     ) internal override returns (bytes4, BalanceDelta) {
+        console.log("afterRemoveLiquidity");
         _afterModifyLiquidity(key, params);
 
         return (this.afterRemoveLiquidity.selector, delta);
@@ -156,6 +158,7 @@ contract OracleHook is BaseHook, Ownable {
         PoolKey calldata key,
         IPoolManager.ModifyLiquidityParams calldata params
     ) internal {
+        console.log("afterModifyLiquidity");
         PoolSnapshot memory snapshot = snapshots[key.toId()];
 
         snapshot.totalLiquidity += params.liquidityDelta;
@@ -164,9 +167,11 @@ contract OracleHook is BaseHook, Ownable {
         snapshots[key.toId()] = snapshot;
 
         if (_isThresholdReached(key)) {
+            console.log("Threshold reached");
             snapshots[key.toId()].lastSnapshotTotalLiquidity = uint256(
                 snapshot.totalLiquidity
             );
+
             _triggerAVSComputation(key);
         }
     }
@@ -199,6 +204,7 @@ contract OracleHook is BaseHook, Ownable {
 
         snapshots[poolId] = snapshot;
 
+        console.log("Triggering AVS computation");
         IOracleServiceManager(serviceManager).createNewTask(
             PoolId.unwrap(poolId),
             activeTick,

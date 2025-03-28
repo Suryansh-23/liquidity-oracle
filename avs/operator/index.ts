@@ -129,7 +129,7 @@ const signAndRespondToTask = async (taskIndex: number, task: Task) => {
   }
 
   const dist = await lc.get(task.poolId, task.activeTick, task.tickSpacing);
-  console.log("Liquidity distribution:", dist);
+  console.log("Received Liquidity Distribution:");
 
   const metrics = liquidityAnalyzer.processDistribution(dist, task.activeTick);
   console.log("Liquidity metrics:", metrics);
@@ -186,7 +186,7 @@ const registerOperator = async () => {
   }
 
   const salt = ethers.hexlify(ethers.randomBytes(32));
-  const expiry = Math.floor(Date.now() / 1000) + 180; // Example expiry, 3 minutes from now
+  const expiry = Math.floor(Date.now() / 1000) + 3600; // Example expiry, 1 hour from now
 
   // Define the output structure
   let operatorSignatureWithSaltAndExpiry = {

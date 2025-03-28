@@ -86,10 +86,8 @@ class LiquidityCurve {
       Promise.all(contractCalls),
       this.getPoolLiquidity(poolAddress),
     ]);
-    console.log("tickResults:", tickResults);
 
     const res = tickResults as MultiCallResponse;
-    console.log("res: ", res);
 
     const poolLiquidityBigInt = BigInt(poolLiquidity);
     console.log("pool Liquidity: ", poolLiquidity, poolLiquidityBigInt);
