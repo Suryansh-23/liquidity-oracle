@@ -14,6 +14,7 @@ import {V4Quoter} from "v4-periphery/src/lens/V4Quoter.sol";
 import {TickMath} from "v4-core/libraries/TickMath.sol";
 import {StateView} from "v4-periphery/src/lens/StateView.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/types/PoolId.sol";
+import {MockLiquidityRouter} from "../test/mocks/MockLiquidityRouter.sol";
 
 import {OracleHook} from "../src/OracleHook.sol";
 import {HookMiner} from "./utils/HookMiner.sol";
@@ -33,7 +34,7 @@ contract DeployOracleHook is Script {
     PoolSwapTest swapRouter;
     StateView stateView;
     V4Quoter quoter;
-
+    MockLiquidityRouter liquidityRouter;
     Currency token0;
     Currency token1;
 
@@ -48,7 +49,8 @@ contract DeployOracleHook is Script {
         vm.startBroadcast(deployerPrivateKey);
         deployV4Contracts();
         quoter = new V4Quoter(manager);
-        deployMintAndApproveCurrencies();
+
+        deployMintCurrenciesAndLiquidityRouter();
 
         deployHookToAnvil(deployer);
 
@@ -100,6 +102,10 @@ contract DeployOracleHook is Script {
             vm.serializeAddress(json, "token1", Currency.unwrap(token1)),
             json
         );
+        vm.writeJson(
+            vm.serializeAddress(json, "modifyLiquidityTest", address(liquidityRouter)),
+            json
+        );
     }
 
     function deployV4Contracts() internal {
@@ -109,7 +115,7 @@ contract DeployOracleHook is Script {
         stateView = new StateView(manager);
     }
 
-    function deployMintAndApproveCurrencies() internal {
+    function deployMintCurrenciesAndLiquidityRouter() internal {
         MockERC20 tokenA = new MockERC20("MockA", "A", 18);
         MockERC20 tokenB = new MockERC20("MockB", "B", 18);
         if (uint160(address(tokenA)) < uint160(address(tokenB))) {
@@ -120,8 +126,17 @@ contract DeployOracleHook is Script {
             token1 = Currency.wrap(address(tokenA));
         }
 
-        tokenA.mint(msg.sender, 100_000 ether);
-        tokenB.mint(msg.sender, 100_000 ether);
+        liquidityRouter = new MockLiquidityRouter(
+            Currency.unwrap(token0),
+            Currency.unwrap(token1),
+            500,
+            10,
+            address(hook),
+            address(lpRouter)
+        );
+
+        tokenA.mint(address(liquidityRouter), 100_000_000 ether);
+        tokenB.mint(address(liquidityRouter), 100_000_000 ether);
     }
 
     function deployHookToAnvil(address owner) internal {
