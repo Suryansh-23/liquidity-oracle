@@ -23,6 +23,8 @@ contract OracleHook is BaseHook, Ownable {
     error OracleHook__NotAuthorized();
     error OracleHook__DataNotAvailable();
 
+    event PoolMetricsUpdated(PoolMetrics poolMetrics);
+
     struct PoolMetrics {
         uint256 liqTransition;
         uint256 volatility;
@@ -75,6 +77,8 @@ contract OracleHook is BaseHook, Ownable {
     ) external {
         if (msg.sender != serviceManager) revert OracleHook__NotAuthorized();
         poolMetrics[PoolId.wrap(_poolId)] = _poolMetrics;
+
+        emit PoolMetricsUpdated(_poolMetrics);
     }
 
     function getHookPermissions()
