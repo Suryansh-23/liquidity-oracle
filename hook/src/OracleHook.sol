@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+import {console} from "forge-std/console.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
@@ -75,6 +76,7 @@ contract OracleHook is BaseHook, Ownable {
         bytes32 _poolId,
         PoolMetrics memory _poolMetrics
     ) external {
+        console.log("updatePoolMetrics");
         if (msg.sender != serviceManager) revert OracleHook__NotAuthorized();
         poolMetrics[PoolId.wrap(_poolId)] = _poolMetrics;
 

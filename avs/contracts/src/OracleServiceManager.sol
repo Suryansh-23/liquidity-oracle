@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
+import {console} from "forge-std/console.sol";
 import {ECDSAServiceManagerBase} from "@eigenlayer-middleware/src/unaudited/ECDSAServiceManagerBase.sol";
 import {ECDSAStakeRegistry} from "@eigenlayer-middleware/src/unaudited/ECDSAStakeRegistry.sol";
 import {ECDSAUpgradeable} from "@openzeppelin-upgrades/contracts/utils/cryptography/ECDSAUpgradeable.sol";
@@ -81,6 +82,10 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         IOracleHook.PoolMetrics memory poolMetrics,
         bytes memory signature
     ) external {
+        console.logBytes32(task.poolId);
+        console.logInt(task.activeTick);
+        console.logInt(task.tickSpacing);
+
         if (!ECDSAStakeRegistry(stakeRegistry).operatorRegistered(msg.sender))
             revert OracleServiceManager__OnlyOperator();
 
@@ -94,7 +99,11 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         bytes32 messageHash = keccak256(
             abi.encodePacked(task.poolId, task.activeTick, task.tickSpacing)
         );
+        console.logBytes32(messageHash);
+
         bytes32 ethSignedMessageHash = messageHash.toEthSignedMessageHash();
+        console.logBytes32(ethSignedMessageHash);
+
         bytes4 magicValue = IERC1271Upgradeable.isValidSignature.selector;
         if (
             !(magicValue ==
@@ -110,8 +119,10 @@ contract OracleServiceManager is ECDSAServiceManagerBase {
         allTaskResponses[msg.sender][referenceTaskIndex] = signature;
 
         // Update pool metrics
+        console.log("Updating pool metrics");
         IOracleHook(hook).updatePoolMetrics(task.poolId, poolMetrics);
 
+        console.log("Emmiting task response");
         emit TaskResponded(referenceTaskIndex, task, msg.sender);
     }
 

@@ -154,11 +154,18 @@ const signAndRespondToTask = async (taskIndex: number, task: Task) => {
 
   console.log(`Signing and responding to task ${taskIndex}`);
 
+  const operators = [await wallet.getAddress()];
+  const signatures = [signature];
+  const signedTask = ethers.AbiCoder.defaultAbiCoder().encode(
+    ["address[]", "bytes[]", "uint32"],
+    [operators, signatures, ethers.toBigInt(await provider.getBlockNumber())]
+  );
+
   const tx = await oracleServiceManager.respondToTask(
     task,
     taskIndex,
     solPoolMetrics,
-    signature
+    signedTask
   );
   await tx.wait();
   console.log(`Responded to task.`);
