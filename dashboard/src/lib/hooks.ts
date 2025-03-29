@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createPublicClient, http, parseAbiItem } from "viem";
+import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 
 // Define the PoolMetrics type to match the Solidity struct
