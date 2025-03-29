@@ -1,3 +1,4 @@
+import fs from "fs";
 import {
   createPublicClient,
   Hex,
@@ -7,13 +8,13 @@ import {
   PublicClient,
 } from "viem";
 import { anvil } from "viem/chains";
+import { K } from "./constants";
 import { Vector } from "./types";
-import { MIN_TICK } from "./utils";
 
-interface TickLiquidity {
-  liquidityGross: bigint; // uint128
-  liquidityNet: bigint; // int128
-}
+type TickLiquidity = [
+  liquidityGross: bigint, // uint128
+  liquidityNet: bigint // int128
+];
 
 interface Tick {
   tickIdx: number; // int24
@@ -23,8 +24,6 @@ interface Tick {
 
 // The multicall response would be an array of these tuples
 type MultiCallResponse = TickLiquidity[];
-
-const K = 1_100;
 
 class LiquidityCurve {
   stateViewAddress: Hex;
@@ -67,10 +66,16 @@ class LiquidityCurve {
 
     const ticks = Array.from(
       {
-        length: Math.trunc(2 * K + 1),
+        length: 2 * K + 1,
       },
       (_, i) => currentTick + (i - K) * tickSpacing
     );
+    const data = JSON.stringify(
+      ticks,
+      (_key, value) => (typeof value === "bigint" ? value.toString() : value),
+      2
+    );
+    fs.writeFileSync(`data/ticks_${Date.now()}.json`, data);
 
     const contractCalls = ticks.map(
       async (tick: number) =>
@@ -78,7 +83,7 @@ class LiquidityCurve {
           address: this.stateViewAddress,
           abi: this.abi,
           functionName: "getTickLiquidity",
-          args: [poolAddress, BigInt(tick)],
+          args: [poolAddress, tick],
         })
     );
 
@@ -107,13 +112,9 @@ class LiquidityCurve {
       currentTick,
       res.map((tick, i) => ({
         // Convert MIN_TICK to number for calculation
-        tickIdx: Number(MIN_TICK) + i * tickSpacing,
-        liquidityGross: BigInt(
-          tick.liquidityGross === undefined ? 0 : tick.liquidityGross
-        ),
-        liquidityNet: BigInt(
-          tick.liquidityNet === undefined ? 0 : tick.liquidityNet
-        ),
+        tickIdx: ticks[i],
+        liquidityGross: BigInt(tick[0] === undefined ? 0 : tick[0]),
+        liquidityNet: BigInt(tick[1] === undefined ? 0 : tick[1]),
       })),
       poolLiquidityBigInt
     );
@@ -124,6 +125,13 @@ class LiquidityCurve {
     ticks: Tick[],
     liquidity: bigint
   ): Vector<number> {
+    const data = JSON.stringify(
+      ticks,
+      (_key, value) => (typeof value === "bigint" ? value.toString() : value),
+      2
+    );
+    fs.writeFileSync(`data/liq_${Date.now()}.json`, data);
+
     const dist: Vector<number> = [[BigInt(currentTick), liquidity]];
     let prevLiq = liquidity;
 

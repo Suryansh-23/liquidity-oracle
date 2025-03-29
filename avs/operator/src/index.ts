@@ -30,6 +30,7 @@ export class LiquidityAnalyzer {
     dist: Vector<number>,
     currentTick: number
   ): LiquidityMetricsResult {
+    console.log("Processing distribution for tick:", currentTick);
     if (currentTick !== undefined) {
       this.currentTick = currentTick;
     }

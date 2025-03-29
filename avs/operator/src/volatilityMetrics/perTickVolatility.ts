@@ -1,7 +1,6 @@
 import { VolatilitySnapshot } from "../types";
+import { SCALE_FACTOR } from "../constants";
 import { MIN_TICK } from "../utils";
-
-const SCALE_FACTOR = 10000n; // Scale factor for 4 decimal places
 
 /**
  * Get Weight for a tickIndex
@@ -38,7 +37,7 @@ function bigintStandardDeviation(values: bigint[]): bigint {
   const sumSquaredDiffs = squaredDiffs.reduce((acc, val) => acc + val, 0n);
 
   // Calculate standard deviation with proper scaling
-  return bigintSqrt((sumSquaredDiffs * SCALE_FACTOR) / BigInt(values.length));
+  return bigintSqrt((sumSquaredDiffs * SCALE_FACTOR) / BigInt(val.ues.length));
 }
 
 /**

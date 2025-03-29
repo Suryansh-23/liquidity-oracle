@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 import { ethers } from "ethers";
 import { LiquidityAnalyzer } from "./src";
-import { MAX_WINDOW_SIZE } from "./src/utils";
+import { MAX_WINDOW_SIZE } from "./src/constants";
 import LiquidityCurve from "./src/liquidityCurve";
 import { isHex } from "viem";
 const fs = require("fs");

@@ -1,9 +1,5 @@
-import { Curve, PRECISION, Vector, VectorPair } from "./types";
-
-export const MIN_TICK: bigint = -887272n;
-export const MAX_TICK: bigint = 887272n;
-
-export const MAX_WINDOW_SIZE = 5;
+import fs from "fs";
+import { Curve, Vector, VectorPair } from "./types";
 
 export const distributionToCurve = (
   distribution: bigint[],
@@ -88,4 +84,16 @@ export const toPrecision = (n: bigint): bigint => {
   // For bigint, we assume the value is already scaled by 10^PRECISION
   // We don't need to truncate decimal places since bigint is already integer
   return n;
+};
+
+export const writeVectorPairToFile = (
+  vp: VectorPair<number>,
+  filePath: string
+): void => {
+  const data = JSON.stringify(
+    vp,
+    (_key, value) => (typeof value === "bigint" ? value.toString() : value),
+    2
+  );
+  fs.appendFileSync(filePath, data + "\n");
 };

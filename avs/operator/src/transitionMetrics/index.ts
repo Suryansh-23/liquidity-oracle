@@ -1,5 +1,9 @@
 import { Curve, Vector, VectorPair } from "../types";
-import { curveToVectorPair, toPrecision } from "../utils";
+import {
+  curveToVectorPair,
+  toPrecision,
+  writeVectorPairToFile,
+} from "../utils";
 import cosine from "./cosine";
 import hellingerDistance from "./hellinger";
 import wassersteinDistance from "./wasserstein";
@@ -101,6 +105,20 @@ class Transition {
     }
 
     const vp = [this.prevDist, distribution] as VectorPair<number>;
+
+    // Check if vectors are identical
+    let identical = true;
+    for (let i = 0; i < vp[0].length; i++) {
+      if (vp[0][i] !== vp[1][i]) {
+        identical = false;
+        break;
+      }
+    }
+    if (identical) {
+      return 0n;
+    }
+    console.log("Are they identical:", identical);
+
     const transition = this.compute(vp);
     this.prevDist = distribution;
 
@@ -131,11 +149,26 @@ class Transition {
 
     const { wassersteinWeight, hellingerWeight, cosineWeight } = finalConfig;
 
+    // debug
+    writeVectorPairToFile(vp, `data/vp_${Date.now()}.json`);
+
     // Calculate individual metrics
     const rawWassersteinDist = wassersteinDistance(vp);
     const wassersteinDist = normalizeWasserstein(rawWassersteinDist, vp);
     const hellingerDist = hellingerDistance(vp);
     const cosineDist = cosineToDistance(cosine(vp));
+
+    console.log(
+      `Wasserstein: ${wassersteinDist}, Hellinger: ${hellingerDist}, Cosine: ${cosine(
+        vp
+      )} CosineDist: ${cosineDist}`
+    );
+
+    console.log("Final Score:", {
+      wassersteinDist,
+      hellingerDist,
+      cosineDist,
+    });
 
     // Combine metrics using weighted sum
     return toPrecision(
