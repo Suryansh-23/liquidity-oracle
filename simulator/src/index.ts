@@ -16,7 +16,7 @@ async function main() {
   const dbManager = DatabaseManager.getInstance(dbPath);
 
   // Get iterator for liquidity events
-  const eventsIterator = dbManager.getLiquidityEventsIterator();
+  const eventsIterator = dbManager.getModifyLiquidityIterator();
 
   // Get interval and tickSpacing from env or use defaults
   const interval = parseInt(process.env.INTERVAL || "5000"); // default 5 seconds
