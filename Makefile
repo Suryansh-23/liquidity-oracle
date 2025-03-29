@@ -1,6 +1,6 @@
 .PHONY: master build-contracts deploy-hook deploy-avs set-service-manager start-operator
 
-PRIVATE_KEY=$(shell grep PRIVATE_KEY avs/.env | cut -d '=' -f2)
+PRIVATE_KEY=$(shell grep PRIVATE_KEY hook/.env | cut -d '=' -f2)
 STATE_VIEW_ADDRESS=$(shell jq -r '.STATE_VIEW' avs/contracts/deployments.json)
 DEPLOYMENTS_FILE=hook/deployments.json
 
@@ -12,10 +12,13 @@ start-anvil:
 	anvil
 
 deploy-hook:
+	cp hook/.env.example hook/.env
 	cd hook && forge script script/DeployOracleHook.s.sol:DeployOracleHook --rpc-url http://localhost:8545 --private-key $(PRIVATE_KEY) --broadcast
 	@echo "Hook deployed at:" $$(jq -r '.oracleHook' $(DEPLOYMENTS_FILE))
 
 deploy-avs:
+	cp avs/.env.example avs/.env
+	cp avs/contracts/.env.example avs/contracts/.env
 	cd avs && npm run deploy:core && npm run deploy:oracle -- $$(jq -r '.oracleHook' ../$(DEPLOYMENTS_FILE))
 	cd avs && npm run extract:abis
 
@@ -34,7 +37,7 @@ update-state-view:
 	@echo "Updated avs/.env with STATE_VIEW_ADDRESS=$(STATE_VIEW)"
 
 start-operator: update-state-view
-	cd avs && npm run start:operator
+	cd avs && npm i && npm run start:operator
 
 test-modify-liquidity:
 	@echo "Fetching deployed contract addresses from $(DEPLOYMENTS_FILE)..."
