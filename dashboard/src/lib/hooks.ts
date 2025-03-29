@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { createPublicClient, http } from "viem";
-import { anvil } from "viem/chains";
+import { createPublicClient, http, parseAbiItem } from "viem";
+import { mainnet } from "viem/chains";
 
 // Define the PoolMetrics type to match the Solidity struct
 export interface PoolMetrics {
@@ -25,6 +25,46 @@ export interface HistoricalMetrics {
 }
 
 const MAX_HISTORY_POINTS = 50;
+const EVENT_ABI = {
+  type: "event",
+  name: "PoolMetricsUpdated",
+  inputs: [
+    {
+      name: "poolMetrics",
+      type: "tuple",
+      indexed: false,
+      internalType: "struct OracleHook.PoolMetrics",
+      components: [
+        {
+          name: "liqTransition",
+          type: "uint256",
+          internalType: "uint256",
+        },
+        {
+          name: "volatility",
+          type: "uint256",
+          internalType: "uint256",
+        },
+        {
+          name: "depth",
+          type: "uint256",
+          internalType: "uint256",
+        },
+        {
+          name: "spread",
+          type: "uint256",
+          internalType: "uint256",
+        },
+        {
+          name: "liqConcentration",
+          type: "uint256",
+          internalType: "uint256",
+        },
+      ],
+    },
+  ],
+  anonymous: false,
+} as const;
 
 // Hook for listening to PoolMetricsUpdated events
 export function usePoolMetrics(oracleAddress: string) {
@@ -36,61 +76,30 @@ export function usePoolMetrics(oracleAddress: string) {
     spread: [],
     liqConcentration: [],
   });
+  const [status, setStatus] = useState<ConnectionStatus>({
+    isConnected: false,
+    lastUpdate: null,
+  });
 
   useEffect(() => {
     const client = createPublicClient({
-      chain: anvil,
-      transport: http(),
+      chain: mainnet,
+      transport: http(import.meta.env.VITE_RPC_URL),
     });
 
     // Create the event listener
     const unwatch = client.watchEvent({
       address: oracleAddress as `0x${string}`,
-      event: {
-        type: "event",
-        name: "PoolMetricsUpdated",
-        inputs: [
-          {
-            name: "poolMetrics",
-            type: "tuple",
-            indexed: false,
-            internalType: "struct OracleHook.PoolMetrics",
-            components: [
-              {
-                name: "liqTransition",
-                type: "uint256",
-                internalType: "uint256",
-              },
-              {
-                name: "volatility",
-                type: "uint256",
-                internalType: "uint256",
-              },
-              {
-                name: "depth",
-                type: "uint256",
-                internalType: "uint256",
-              },
-              {
-                name: "spread",
-                type: "uint256",
-                internalType: "uint256",
-              },
-              {
-                name: "liqConcentration",
-                type: "uint256",
-                internalType: "uint256",
-              },
-            ],
-          },
-        ],
-        anonymous: false,
-      } as const,
+      event: EVENT_ABI, // don't touch this until necessary
       onLogs: (logs) => {
         const [log] = logs;
         if (log) {
           const newMetrics = log.args.poolMetrics as PoolMetrics;
           setMetrics(newMetrics);
+          setStatus({
+            isConnected: true,
+            lastUpdate: new Date(),
+          });
 
           // Update historical data
           const timestamp = Date.now();
@@ -101,10 +110,9 @@ export function usePoolMetrics(oracleAddress: string) {
             ) => {
               const newPoint = {
                 timestamp,
-                value: Number(newValue) / 1e4,
+                value: Number(newValue) / 1e4, // DON'T TOUCH THIS
               };
               const updated = [...current, newPoint];
-              console.log(updated);
               return updated.slice(-MAX_HISTORY_POINTS);
             };
 
@@ -135,10 +143,52 @@ export function usePoolMetrics(oracleAddress: string) {
     };
   }, [oracleAddress]);
 
-  return { current: metrics, history };
+  return { current: metrics, history, status };
 }
 
 // Helper function to format bigint values for display
 export function formatMetric(value: bigint): string {
   return (Number(value) / 1e4).toFixed(2);
+}
+
+export interface ConnectionStatus {
+  isConnected: boolean;
+  lastUpdate: Date | null;
+}
+
+export function useConnectionStatus() {
+  const [status, setStatus] = useState<ConnectionStatus>({
+    isConnected: false,
+    lastUpdate: null,
+  });
+
+  useEffect(() => {
+    let pingInterval: NodeJS.Timeout;
+
+    async function checkConnection() {
+      const client = createPublicClient({
+        chain: mainnet,
+        transport: http(import.meta.env.VITE_RPC_URL),
+      });
+
+      try {
+        await client.getBlockNumber();
+        setStatus((prev) => ({ ...prev, isConnected: true }));
+      } catch {
+        setStatus((prev) => ({ ...prev, isConnected: false }));
+      }
+    }
+
+    // Initial check
+    checkConnection();
+
+    // Set up periodic ping
+    pingInterval = setInterval(checkConnection, 5000);
+
+    return () => {
+      clearInterval(pingInterval);
+    };
+  }, []);
+
+  return status;
 }

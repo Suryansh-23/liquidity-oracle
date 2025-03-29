@@ -23,11 +23,20 @@ export function MetricChart({ data, color = "#4f46e5" }: MetricChartProps) {
             dataKey="timestamp"
             tickFormatter={(timestamp) => format(timestamp, "HH:mm:ss")}
             interval="preserveStartEnd"
+            stroke="#6b7280"
+            tick={{ fill: "#9ca3af" }}
           />
-          <YAxis />
+          <YAxis stroke="#6b7280" tick={{ fill: "#9ca3af" }} />
           <Tooltip
             labelFormatter={(timestamp) => format(timestamp, "HH:mm:ss")}
             formatter={(value: number) => [value.toFixed(2), "Value"]}
+            contentStyle={{
+              backgroundColor: "#1f2937",
+              border: "1px solid #374151",
+              borderRadius: "0.375rem",
+              color: "#e5e7eb",
+            }}
+            itemStyle={{ color: "#e5e7eb" }}
           />
           <Line
             type="monotone"

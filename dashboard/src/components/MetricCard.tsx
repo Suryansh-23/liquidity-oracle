@@ -7,6 +7,7 @@ interface MetricCardProps {
   description: string;
   history: MetricDataPoint[];
   color?: string;
+  className?: string;
 }
 
 export function MetricCard({
@@ -15,18 +16,21 @@ export function MetricCard({
   description,
   history,
   color,
+  className = "",
 }: MetricCardProps) {
   return (
-    <div className="bg-white overflow-hidden rounded-lg shadow">
+    <div
+      className={`bg-gray-800 overflow-hidden rounded-lg shadow-lg border border-gray-700 ${className}`}
+    >
       <div className="p-5">
         <div className="flex items-center">
           <div className="w-full">
             <dl>
-              <dt className="text-sm font-medium text-gray-500 truncate">
+              <dt className="text-sm font-medium text-gray-400 truncate">
                 {title}
               </dt>
               <dd className="flex items-baseline">
-                <div className="text-2xl font-semibold text-gray-900">
+                <div className="text-2xl font-semibold text-gray-100">
                   {value}
                 </div>
               </dd>
