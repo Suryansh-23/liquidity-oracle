@@ -137,7 +137,7 @@ const signAndRespondToTask = async (taskIndex: number, task: Task) => {
   // Convert metrics to Solidity struct
   const solPoolMetrics = {
     liqTransition: ethers.getBigInt(metrics.volatility.transition),
-    volatility: ethers.getBigInt(metrics.volatility.overall),
+    volatility: ethers.getBigInt(metrics.volatility.aggregate),
     depth: ethers.getBigInt(metrics.structure.liquidityDepth),
     spread: ethers.getBigInt(metrics.structure.liquiditySpread),
     liqConcentration: ethers.getBigInt(

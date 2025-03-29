@@ -106,19 +106,6 @@ class Transition {
 
     const vp = [this.prevDist, distribution] as VectorPair<number>;
 
-    // Check if vectors are identical
-    let identical = true;
-    for (let i = 0; i < vp[0].length; i++) {
-      if (vp[0][i] !== vp[1][i]) {
-        identical = false;
-        break;
-      }
-    }
-    if (identical) {
-      return 0n;
-    }
-    console.log("Are they identical:", identical);
-
     const transition = this.compute(vp);
     this.prevDist = distribution;
 

@@ -70,12 +70,12 @@ class LiquidityCurve {
       },
       (_, i) => currentTick + (i - K) * tickSpacing
     );
-    const data = JSON.stringify(
-      ticks,
-      (_key, value) => (typeof value === "bigint" ? value.toString() : value),
-      2
-    );
-    fs.writeFileSync(`data/ticks_${Date.now()}.json`, data);
+    // const data = JSON.stringify(
+    //   ticks,
+    //   (_key, value) => (typeof value === "bigint" ? value.toString() : value),
+    //   2
+    // );
+    // fs.writeFileSync(`data/ticks_${Date.now()}.json`, data);
 
     const contractCalls = ticks.map(
       async (tick: number) =>
@@ -125,19 +125,19 @@ class LiquidityCurve {
     ticks: Tick[],
     liquidity: bigint
   ): Vector<number> {
-    const data = JSON.stringify(
-      ticks,
-      (_key, value) => (typeof value === "bigint" ? value.toString() : value),
-      2
-    );
-    fs.writeFileSync(`data/liq_${Date.now()}.json`, data);
+    // const data = JSON.stringify(
+    //   ticks,
+    //   (_key, value) => (typeof value === "bigint" ? value.toString() : value),
+    //   2
+    // );
+    // fs.writeFileSync(`data/liq_${Date.now()}.json`, data);
 
     const dist: Vector<number> = [[BigInt(currentTick), liquidity]];
     let prevLiq = liquidity;
 
     for (let i = K + 2; i < ticks.length; i++) {
       const tick = ticks[i];
-      const currentLiquidity = prevLiq - tick.liquidityNet;
+      const currentLiquidity = prevLiq + tick.liquidityNet;
       dist.push([BigInt(tick.tickIdx), currentLiquidity]);
       prevLiq = currentLiquidity;
     }

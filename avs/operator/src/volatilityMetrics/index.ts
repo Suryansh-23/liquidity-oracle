@@ -1,3 +1,5 @@
+import { log2 } from "extra-bigint";
+import { K } from "../constants";
 import {
   AggregateHistory,
   Vector,
@@ -5,7 +7,7 @@ import {
   VolatilityScores,
   VolatilitySnapshot,
 } from "../types";
-import { MAX_TICK, MIN_TICK, toPrecision } from "../utils";
+import { toPrecision } from "../utils";
 import aggregateVolatility from "./aggregateVolatility";
 import entropyVolatility from "./entropyVolatility";
 import ewmx from "./normalize";
@@ -109,22 +111,21 @@ export default class Volatility {
       perTickVolatility(this.window, currentTick, this.tickSpacing),
       this.aggHistory.perTickEMX
     );
+    console.log(
+      "PerTick Value w/o EMX:",
+      perTickVolatility(this.window, currentTick, this.tickSpacing)
+    );
 
     // Calculate entropy with bigint scaling
     const entropyVal = entropyVolatility(this.window);
+    console.log("Entropy value:", entropyVal);
     // Approximate log calculation for denominator scaling
     // Convert bigints to numbers for this calculation
-    const tickRange = Math.trunc(
-      (Number(MAX_TICK) - Number(MIN_TICK)) / this.tickSpacing
-    );
-    const logScaled = BigInt(
-      Math.floor(Math.log(tickRange) * Number(SCALE_FACTOR))
-    );
+    const tickRange = 2 * K + 1;
+    const logScaled = log2(BigInt(tickRange));
 
     // Normalize entropy by dividing by log(range)
-    const entropy =
-      logScaled > 0n ? (entropyVal * SCALE_FACTOR) / logScaled : 0n;
-
+    const entropy = logScaled > 0n ? entropyVal / logScaled : 0n;
     const temporal = temporalDependence(this.window);
 
     const scores: VolatilityScores = {

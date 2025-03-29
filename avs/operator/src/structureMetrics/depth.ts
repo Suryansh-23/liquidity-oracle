@@ -1,5 +1,5 @@
+import { K } from "../constants";
 import { Vector } from "../types";
-import { MAX_TICK, MIN_TICK } from "../utils";
 
 const EDGE_WEIGHT = 0.1;
 const SCALE_FACTOR = 10000n; // Using 10000 as scale factor for 4 decimal places of precision
@@ -9,16 +9,45 @@ const SCALE_FACTOR = 10000n; // Using 10000 as scale factor for 4 decimal places
  * Returns a scaled integer representation of the decay value
  */
 const expoDecay = (x: bigint, k: number): bigint => {
-  // For bigint calculations, we need to use a lookup table or approximation
-  // We'll use a scaled integer approach with the scale factor
-
-  // The original function: Math.exp(-lambda * x) where lambda = -Math.log(EDGE_WEIGHT) / k
-  // Convert to floating point for the calculation
+  // Calculate decay rate from the edge weight and distribution size
   const lambda = -Math.log(EDGE_WEIGHT) / k;
-  const floatResult = Math.exp(-lambda * Number(x));
 
-  // Convert back to scaled bigint
-  return BigInt(Math.floor(floatResult * Number(SCALE_FACTOR)));
+  // Calculate a threshold beyond which the result would be effectively zero
+  const thresholdX = BigInt(Math.ceil(Math.log(Number(SCALE_FACTOR)) / lambda));
+
+  // Early return for extremely large distances where decay is effectively zero
+  if (x > thresholdX) {
+    return 0n;
+  }
+
+  // For large bigints that exceed safe number range
+  if (x > BigInt(Number.MAX_SAFE_INTEGER)) {
+    // Split the calculation using the mathematical property:
+    // e^(-λx) = e^(-λ(q*MAX_SAFE_INTEGER + r)) = (e^(-λ*MAX_SAFE_INTEGER))^q * e^(-λr)
+    const base = BigInt(Number.MAX_SAFE_INTEGER);
+    const quotient = x / base;
+    const remainder = x % base;
+
+    // Calculate the base decay for one chunk
+    const baseDecay = Math.exp(-lambda * Number(base));
+
+    // If quotient is very large, the result will be effectively zero
+    if (quotient > BigInt(100)) {
+      return 0n;
+    }
+
+    // Calculate the final decay value
+    const quotientDecay = Math.pow(baseDecay, Number(quotient));
+    const remainderDecay = Math.exp(-lambda * Number(remainder));
+    const totalDecay = quotientDecay * remainderDecay;
+
+    // Scale and return as bigint
+    return BigInt(Math.round(totalDecay * Number(SCALE_FACTOR)));
+  }
+
+  // For values within safe number range
+  const floatResult = Math.exp(-lambda * Number(x));
+  return BigInt(Math.round(floatResult * Number(SCALE_FACTOR)));
 };
 
 /**
@@ -40,7 +69,7 @@ const depth = (
   ]);
 
   // Convert bigints to numbers for this calculation
-  const size = Math.trunc((Number(MAX_TICK) - Number(MIN_TICK)) / tickSpacing);
+  const size = Math.trunc((2 * K) / tickSpacing);
 
   // Calculate weighted sum with exponential decay based on distance
   return distWithDistance.reduce((sum, point) => {

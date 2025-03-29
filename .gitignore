@@ -1,4 +1,4 @@
 .env
 hook_address.txt
 service_manager_address.txt
-*.log
+**/*.log
