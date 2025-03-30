@@ -1,6 +1,11 @@
 # Liquidity Oracle
 
-![alt text](docs/cover.png)
+![Solidity](https://img.shields.io/badge/Solidity-363636?style=for-the-badge&logo=solidity&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Ethereum](https://img.shields.io/badge/Ethereum-3C3C3D?style=for-the-badge&logo=ethereum&logoColor=white)
+![Uniswap](https://img.shields.io/badge/Uniswap-FF007A?style=for-the-badge&logo=uniswap&logoColor=white)
+![EigenLayer](https://img.shields.io/badge/EigenLayer-AVS-blue?style=for-the-badge)
 
 ## Table of Contents
 
