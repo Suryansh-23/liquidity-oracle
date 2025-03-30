@@ -56,20 +56,20 @@ A **Uniswap v4 Hook** responsible for maintaining pool metrics and triggering AV
 
 - Manages task creation for AVS computations.
 - Validates AVS operator responses before posting them to the Oracle Hook.
-- Seamlessly integrates with **EigenLayer core contracts**.
+- Integrates with **EigenLayer core contracts**.
 
 ### **3. AVS Operator**
 
-- Analyzes **liquidity distribution curves**.
-- Computes **volatility and transition metrics**.
-- Calculates **structural liquidity parameters**.
-- Signs and submits results **on-chain**.
+- Analyzes liquidity distribution curves.
+- Computes volatility and transition metrics.
+- Calculates structural liquidity parameters.
+- Signs and submits results on-chain.
 
 ![alt text](docs/architecture.png)
 
 ## Key Metrics
 
-The Liquidity Oracle quantifies pool liquidity behavior through several **key indicators**:
+The Liquidity Oracle quantifies pool liquidity behavior through several key indicators:
 
 ### **1. Spread Analysis**
 
@@ -90,10 +90,10 @@ The Liquidity Oracle quantifies pool liquidity behavior through several **key in
 
 ### **4. Volatility Computation**
 
-- **Time-based volatility tracking** using:
-  - **Entropy metrics**.
-  - **Per-tick volatility (EWMA-based smoothing)**.
-  - **Temporal volatility assessments**.
+- Time-based volatility tracking using:
+  - Entropy metrics.
+  - Per-tick volatility (EWMA-based smoothing).
+  - Temporal volatility assessments.
 
 ## Setup
 
@@ -136,70 +136,70 @@ The Liquidity Oracle quantifies pool liquidity behavior through several **key in
 
 ### Enhanced LP Strategies
 
-- **Real-time liquidity rebalancing** based on liquidity transitions.
-- **Optimized position ranges** using historical liquidity data.
+- Real-time liquidity rebalancing based on liquidity transitions.
+- Optimized position ranges using historical liquidity data.
 
 ### Risk Management
 
-- **Improved liquidation mechanisms** using liquidity depth insights.
-- **Better volatility forecasting** with liquidity transition data.
-- **Preemptive position adjustments** to avoid high-slippage trades.
+- Improved liquidation mechanisms using liquidity depth insights.
+- Better volatility forecasting with liquidity transition data.
+- Preemptive position adjustments to avoid high-slippage trades.
 
 ### Market Analysis
 
-- **Deep insights into market maker behavior** across time.
-- **Predictive modeling** using oracle-provided liquidity metrics.
-- **Detection of abnormal liquidity behaviors** (e.g., sandwich attacks).
+- Deep insights into market maker behavior across time.
+- Predictive modeling using oracle-provided liquidity metrics.
+- Detection of abnormal liquidity behaviors (e.g., sandwich attacks).
 
 ### Automated Liquidity Provisioning
 
-- **Dynamic fee adjustments** based on volatility and depth analysis.
-- **Adaptive liquidity allocation** across multiple Uniswap pools.
-- **Integration with automated market makers (AMMs)** for optimizing liquidity distribution.
+- Dynamic fee adjustments based on volatility and depth analysis.
+- Adaptive liquidity allocation across multiple Uniswap pools.
+- Integration with automated market makers (AMMs) for optimizing liquidity distribution.
 
 ### Liquid Staking & Yield Strategies
 
-- **Determining optimal staking vs. LP rewards** based on volatility.
-- **Risk-adjusted allocation of liquidity** for better yield optimization.
-- **Cross-protocol liquidity monitoring** for better capital efficiency.
+- Determining optimal staking vs. LP rewards based on volatility.
+- Risk-adjusted allocation of liquidity for better yield optimization.
+- Cross-protocol liquidity monitoring for better capital efficiency.
 
 ### Flash Loan & Arbitrage Strategy Optimization
 
-- **Real-time liquidity transition data** to identify profitable arbitrage opportunities.
-- **Flash loan risk analysis** to prevent large slippage in short-term trades.
-- **Enhanced execution for MEV bots** leveraging precise liquidity estimates.
+- Real-time liquidity transition data to identify profitable arbitrage opportunities.
+- Flash loan risk analysis to prevent large slippage in short-term trades.
+- Enhanced execution for MEV bots leveraging precise liquidity estimates.
 
 ### Lending Protocol Risk Modeling
 
-- **Borrow/Lend market risk** estimation based on liquidity depth.
-- **Adaptive collateral ratio adjustments** based on market volatility.
-- **Preventing cascading liquidations** by integrating liquidity-aware triggers.
+- Borrow/Lend market risk estimation based on liquidity depth.
+- Adaptive collateral ratio adjustments based on market volatility.
+- Preventing cascading liquidations by integrating liquidity-aware triggers.
 
 ## Extensions & Future Roadmap
 
 ### 1. Improved AVS Triggering Mechanism
 
-- Develop a **dynamic threshold model** for triggering AVS computations per pool.
-- Introduce **pool-specific sensitivity settings** based on historical liquidity behavior.
-- Optimize **gas efficiency** by reducing unnecessary AVS computations.
+- Develop a dynamic threshold model for triggering AVS computations per pool.
+- Introduce pool-specific sensitivity settings based on historical liquidity behavior.
+- Optimize gas efficiency by reducing unnecessary AVS computations.
 
 ### 2. Advanced Liquidity Metrics
 
-- **Liquidity Fragmentation** – Measures how liquidity is distributed across multiple pools or chains.
-- **Tick Density Gradient** – Analyzes liquidity concentration per tick to detect clustering patterns.
-- **Liquidity Time-To-Live (LTTL)** – Estimates the lifespan of liquidity at different price levels.
+- Liquidity Fragmentation – Measures how liquidity is distributed across multiple pools or chains.
+- Tick Density Gradient – Analyzes liquidity concentration per tick to detect clustering patterns.
+- Liquidity Time-To-Live (LTTL) – Estimates the lifespan of liquidity at different price levels.
 
 ### 3. Slashing Mechanism for AVS Operators
 
-- Introduce a **stake-slashing protocol** for AVS operators submitting incorrect or delayed data.
-- Implement **on-chain fraud detection** to penalize misreporting.
-- Use **historical accuracy tracking** to reward reliable operators and slash malicious ones.
+- Introduce a stake-slashing protocol for AVS operators submitting incorrect or delayed data.
+- Implement on-chain fraud detection to penalize misreporting.
+- Use historical accuracy tracking to reward reliable operators and slash malicious ones.
 
 ### 4. Quorum-Based Signature Aggregation
 
-- Use **multi-signature threshold schemes** to aggregate operator responses.
-- Implement **BLS or Schnorr signature aggregation** for efficient verification.
-- Reduce **on-chain storage costs** by bundling AVS responses into a single proof.
+- Use multi-signature threshold schemes to aggregate operator responses.
+- Implement BLS or Schnorr signature aggregation for efficient verification.
+- Reduce on-chain storage costs by bundling AVS responses into a single proof.
 
 ## License
 
