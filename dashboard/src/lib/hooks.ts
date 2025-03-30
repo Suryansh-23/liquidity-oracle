@@ -25,6 +25,7 @@ export interface HistoricalMetrics {
 }
 
 const MAX_HISTORY_POINTS = 50;
+// DON'T TOUCH THIS
 const EVENT_ABI = {
   type: "event",
   name: "PoolMetricsUpdated",

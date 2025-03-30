@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { useEffect, useState } from "react";
 
 interface StatusBadgeProps {
@@ -9,12 +9,7 @@ interface StatusBadgeProps {
   error?: string | null;
 }
 
-export function StatusBadge({
-  isConnected,
-  lastUpdate,
-  networkName,
-  blockNumber,
-}: StatusBadgeProps) {
+export function StatusBadge({ isConnected, lastUpdate }: StatusBadgeProps) {
   const [timeAgo, setTimeAgo] = useState<string>("");
 
   useEffect(() => {
@@ -48,14 +43,7 @@ export function StatusBadge({
         <div className="flex flex-col">
           <span className="text-gray-300">
             {isConnected ? (
-              <span className="flex items-center gap-2">
-                <span>{networkName || "Connected"}</span>
-                {blockNumber && (
-                  <span className="text-gray-400 text-xs">
-                    (Block: {blockNumber.toString()})
-                  </span>
-                )}
-              </span>
+              <span className="flex items-center gap-2">Connected</span>
             ) : (
               <span className="flex items-center gap-2">
                 <span>Disconnected</span>
@@ -71,8 +59,8 @@ export function StatusBadge({
       </div>
       {lastUpdate && (
         <div className="text-gray-400 border-l border-gray-600 pl-2 flex gap-2">
-          <span>Last update: {format(lastUpdate, "HH:mm:ss")}</span>
-          <span className="text-gray-500">({timeAgo})</span>
+          <span>Last update: </span>
+          <span>{timeAgo}</span>
         </div>
       )}
     </div>
