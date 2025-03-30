@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPublicClient, http } from "viem";
-import { mainnet } from "viem/chains";
+import { anvil } from "viem/chains";
 
 // Define the PoolMetrics type to match the Solidity struct
 export interface PoolMetrics {
@@ -87,8 +87,8 @@ export function usePoolMetrics(oracleAddress: string) {
 
   useEffect(() => {
     const client = createPublicClient({
-      chain: mainnet,
-      transport: http(import.meta.env.VITE_RPC_URL),
+      chain: anvil,
+      transport: http(),
     });
 
     // Create the event listener
@@ -179,11 +179,11 @@ export function useConnectionStatus() {
     async function checkConnection() {
       const client = createPublicClient({
         chain: {
-          ...mainnet,
+          ...anvil, // DON'T TOUCH THIS
           id: 31337, // Anvil's chain ID
           name: "Anvil Local Network",
         },
-        transport: http(import.meta.env.VITE_RPC_URL),
+        transport: http(),
       });
 
       try {

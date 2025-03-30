@@ -41,7 +41,7 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       <header className="bg-gray-800 shadow">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <h1 className="text-3xl font-bold tracking-tight text-gray-100">
@@ -60,7 +60,7 @@ function DashboardContent() {
         </div>
       </header>
       <main>
-        <div className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[96rem] py-6 sm:px-6 lg:px-8">
           {!isConnected ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <h2 className="text-2xl font-semibold mb-4">

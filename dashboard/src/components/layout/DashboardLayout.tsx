@@ -4,11 +4,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-gray-800/40 bg-background-darker px-6 py-4">
-        <div className="container mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-dune-400">
-            Liquidity Oracle Analytics
+        <div className="container mx-auto flex items-center justify-between overflow-hidden">
+          <h1 className="text-xl font-semibold text-dune-400 shrink-0">
+            Liquidity Oracle Dashboard
           </h1>
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-gray-400 truncate ml-4">
             Last update:{" "}
             <span className="text-dune-300 font-medium">
               {new Date().toLocaleTimeString()}
