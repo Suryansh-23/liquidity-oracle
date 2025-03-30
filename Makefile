@@ -49,22 +49,33 @@ test-modify-liquidity:
 	cd hook && forge script script/ModifyLiquidity.s.sol --rpc-url http://localhost:8545 --broadcast --sig "run(address,address,address,address)" $$LP_ROUTER $$TOKEN0 $$TOKEN1 $$HOOK
 
 start-simulator:
+	cp simulator/.env.example simulator/.env
 	@echo "Fetching Mock Liquidity Router Address..."
 	$(eval ROUTER_ADDRESS := $(shell jq -r '.mockModifyLiquidity' $(DEPLOYMENTS_FILE)))
 	@echo "Updating simulator/.env..."
 	sed -i'' -e 's/^ROUTER_ADDRESS=.*/ROUTER_ADDRESS=$(ROUTER_ADDRESS)/' simulator/.env
-
 	@echo "Updated simulator/.env with ROUTER_ADDRESS=$(ROUTER_ADDRESS)"
-	cd simulator && npm run start
+	sed -i'' -e 's/^PRIVATE_KEY=.*/PRIVATE_KEY=$(PRIVATE_KEY)/' simulator/.env
+
+	cd simulator && npm i && npm run start
 
 start-dashboard:
+	cp dashboard/.env.example dashboard/.env
 	@echo "Fetching Oracle Hook Address..."
 	$(eval ORACLE_ADDRESS := $(shell jq -r '.oracleHook' $(DEPLOYMENTS_FILE)))
 	@echo "Updating dashboard/.env..."
 	sed -i'' -e 's/^VITE_ORACLE_ADDRESS=.*/VITE_ORACLE_ADDRESS=$(ORACLE_ADDRESS)/' dashboard/.env
 
 	@echo "Updated dashboard/.env with VITE_ORACLE_ADDRESS=$(ORACLE_ADDRESS)"
-	cd dashboard && npm run dev 
+
+	@echo "Fetching Mock Liquidity Router Address..."
+	$(eval VITE_ROUTER_ADDRESS := $(shell jq -r '.mockModifyLiquidity' $(DEPLOYMENTS_FILE)))
+	@echo "Updating dashboard/.env..."
+	sed -i'' -e 's/^VITE_ROUTER_ADDRESS=.*/VITE_ROUTER_ADDRESS=$(VITE_ROUTER_ADDRESS)/' dashboard/.env
+
+	@echo "Updated dashboard/.env with VITE_ROUTER_ADDRESS=$(VITE_ROUTER_ADDRESS)"
+
+	cd dashboard && npm i && npm run dev 
 	@echo "Starting dashboard..."
 
 master: build-contracts deploy-hook deploy-avs set-service-manager start-operator
