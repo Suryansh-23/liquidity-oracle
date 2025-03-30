@@ -10,6 +10,7 @@
 ## Table of Contents
 
 - [Demo](#demo)
+- [Pitch Deck](#pitch-deck)
 - [Overview](#overview)
 - [Core Functionality](#core-functionality)
 - [Architecture](#architecture)
@@ -28,6 +29,15 @@
     </a>
     <a href="https://www.loom.com/share/0ec9cea34bfb45fdafd271d23b51ff6e">
       <img style="width:100%;" src="https://cdn.loom.com/sessions/thumbnails/0ec9cea34bfb45fdafd271d23b51ff6e-308a8b9aaffc880b-full-play.gif">
+    </a>
+</div>
+
+## Pitch Deck
+
+<div>
+    <a href="https://www.figma.com/deck/0o9mYXb60MMLtI4hrWbVuU/UHI?node-id=3-577&viewport=172%2C-157%2C0.72&t=nFQbF5GQH0aFjdqj-1&scaling=min-zoom&content-scaling=fixed&page-id=0%3A1
+    ">
+      <p>Liquidity Oracle - Pitch Deck</p>
     </a>
 </div>
 
