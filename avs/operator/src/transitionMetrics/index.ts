@@ -1,14 +1,10 @@
-import { Curve, Vector, VectorPair } from "../types";
-import {
-  curveToVectorPair,
-  toPrecision,
-  writeVectorPairToFile,
-} from "../utils";
+import { Vector, VectorPair } from "../types";
+import { toPrecision } from "../utils";
 import cosine from "./cosine";
 import hellingerDistance from "./hellinger";
 import wassersteinDistance from "./wasserstein";
-
-const SCALE_FACTOR = 10000n; // For 4 decimal places precision
+import { SCALE_FACTOR } from "../constants";
+import { abs, min } from "extra-bigint";
 
 /**
  * Configuration for the composite metric weights and parameters
@@ -45,7 +41,7 @@ const DEFAULT_CONFIG: Required<CompositeMetricConfig> = {
 const cosineToDistance = (similarity: bigint): bigint => {
   // Convert cosine similarity to distance: (1 - similarity) / 2
   // For bigint calculation with scaling
-  return (SCALE_FACTOR - similarity) / 2n;
+  return SCALE_FACTOR - abs(similarity);
 };
 
 /**
@@ -137,19 +133,13 @@ class Transition {
     const { wassersteinWeight, hellingerWeight, cosineWeight } = finalConfig;
 
     // debug
-    writeVectorPairToFile(vp, `data/vp_${Date.now()}.json`);
+    // writeVectorPairToFile(vp, `data/vp_${Date.now()}.json`);
 
     // Calculate individual metrics
     const rawWassersteinDist = wassersteinDistance(vp);
     const wassersteinDist = normalizeWasserstein(rawWassersteinDist, vp);
     const hellingerDist = hellingerDistance(vp);
     const cosineDist = cosineToDistance(cosine(vp));
-
-    console.log(
-      `Wasserstein: ${wassersteinDist}, Hellinger: ${hellingerDist}, Cosine: ${cosine(
-        vp
-      )} CosineDist: ${cosineDist}`
-    );
 
     console.log("Final Score:", {
       wassersteinDist,
@@ -158,10 +148,13 @@ class Transition {
     });
 
     // Combine metrics using weighted sum
-    return toPrecision(
-      (wassersteinWeight * wassersteinDist) / SCALE_FACTOR +
-        (hellingerWeight * hellingerDist) / SCALE_FACTOR +
-        (cosineWeight * cosineDist) / SCALE_FACTOR
+    return min(
+      SCALE_FACTOR,
+      toPrecision(
+        wassersteinWeight * wassersteinDist +
+          hellingerWeight * hellingerDist +
+          cosineWeight * cosineDist
+      ) / SCALE_FACTOR
     );
   };
 }

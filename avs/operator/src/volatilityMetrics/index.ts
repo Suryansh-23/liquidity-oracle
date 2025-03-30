@@ -77,7 +77,8 @@ export default class Volatility {
         liquidity: distribution,
         transition,
       });
-      if (this.window.length >= this.maxSize) {
+      if (this.window.length > this.maxSize) {
+        this.window.shift();
         return this.compute(currentTick);
       } else {
         return {

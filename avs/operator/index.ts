@@ -129,14 +129,13 @@ const signAndRespondToTask = async (taskIndex: number, task: Task) => {
   }
 
   const dist = await lc.get(task.poolId, task.activeTick, task.tickSpacing);
-  console.log("Received Liquidity Distribution:");
 
   const metrics = liquidityAnalyzer.processDistribution(dist, task.activeTick);
   console.log("Liquidity metrics:", metrics);
 
   // Convert metrics to Solidity struct
   const solPoolMetrics = {
-    liqTransition: ethers.getBigInt(metrics.volatility.transition),
+    liqTransition: ethers.getBigInt(metrics.transition),
     volatility: ethers.getBigInt(metrics.volatility.aggregate),
     depth: ethers.getBigInt(metrics.structure.liquidityDepth),
     spread: ethers.getBigInt(metrics.structure.liquiditySpread),

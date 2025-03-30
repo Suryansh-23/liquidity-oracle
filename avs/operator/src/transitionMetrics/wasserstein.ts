@@ -1,6 +1,6 @@
+import { abs } from "extra-bigint";
 import { VectorPair } from "../types";
-
-const SCALE_FACTOR = 10000n; // Scale factor for 4 decimal places
+import { SCALE_FACTOR } from "../constants";
 
 /**
  * Calculate the Wasserstein distance between two one-dimensional distributions.
@@ -35,47 +35,47 @@ const wassersteinDistance = (vp: VectorPair<number>): bigint => {
  * @returns The computed Wasserstein distance between the distributions.
  */
 function cdfDistance(u_values: bigint[], v_values: bigint[]): bigint {
-  // Convert arrays to contain the same numeric type (bigint)
-  const u_vals = u_values.map((val) => val);
-  const v_vals = v_values.map((val) => val);
-
   // Sort the values (create sorters)
-  const u_sorter = argsort(u_vals);
-  const v_sorter = argsort(v_vals);
+  const u_sorter = argsort(u_values);
+  const v_sorter = argsort(v_values);
 
   // Concatenate all values and sort them
-  const all_values = [...u_vals, ...v_vals].sort((a, b) =>
+  const all_values = [...u_values, ...v_values].sort((a, b) =>
     a < b ? -1 : a > b ? 1 : 0
   );
 
   // Compute the differences between pairs of successive values
   const deltas = diff(all_values);
 
-  // Get the respective positions of the values of u and v among the values of
-  // both distributions
-  const u_sorted = u_vals.slice().sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  const v_sorted = v_vals.slice().sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-
-  const u_cdf_indices = searchsortedRight(u_sorted, all_values.slice(0, -1));
-  const v_cdf_indices = searchsortedRight(v_sorted, all_values.slice(0, -1));
+  const u_cdf_indices = searchsortedRight(
+    u_values
+      .slice()
+      .sort()
+      .sort((a, b) => Number(a - b)),
+    all_values.slice(0, -1)
+  );
+  const v_cdf_indices = searchsortedRight(
+    v_values
+      .slice()
+      .sort()
+      .sort((a, b) => Number(a - b)),
+    all_values.slice(0, -1)
+  );
 
   // Calculate the CDFs of u and v (without weights)
   const u_cdf = u_cdf_indices.map(
-    (index) => (BigInt(index) * SCALE_FACTOR) / BigInt(u_vals.length)
+    (index) => (BigInt(index) * SCALE_FACTOR) / BigInt(u_values.length)
   );
   const v_cdf = v_cdf_indices.map(
-    (index) => (BigInt(index) * SCALE_FACTOR) / BigInt(v_vals.length)
+    (index) => (BigInt(index) * SCALE_FACTOR) / BigInt(v_values.length)
   );
 
-  // Compute the value of the integral based on the CDFs for p = 1
-  let sum = 0n;
-  for (let i = 0; i < deltas.length; i++) {
-    const diff =
-      u_cdf[i] > v_cdf[i] ? u_cdf[i] - v_cdf[i] : v_cdf[i] - u_cdf[i];
-    sum += (diff * deltas[i]) / SCALE_FACTOR;
-  }
-
-  return sum;
+  return (
+    deltas.reduce(
+      (sum, delta, i) => sum + abs(u_cdf[i] - v_cdf[i]) * delta,
+      0n
+    ) / 10000n
+  );
 }
 
 /**

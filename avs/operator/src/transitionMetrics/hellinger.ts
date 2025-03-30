@@ -1,7 +1,7 @@
+import { sqrt } from "extra-bigint";
 import { VectorPair } from "../types";
 import { sumNormalize } from "../utils";
-
-const SCALE_FACTOR = 10000n; // Scale factor for 4 decimal places
+import { SCALE_FACTOR } from "../constants";
 
 const hellingerDistance = (vp: VectorPair<number>): bigint => {
   let [p, q] = vp;
@@ -13,48 +13,17 @@ const hellingerDistance = (vp: VectorPair<number>): bigint => {
   // Calculate Hellinger distance with bigint
   const sumSquaredDiff = p.reduce((acc, [_, x], i) => {
     // Calculate square roots using our bigint sqrt function
-    const sqrtX = bigintSqrt(x * SCALE_FACTOR);
-    const sqrtY = bigintSqrt(q[i][1] * SCALE_FACTOR);
+    const sqrtX = sqrt(x * SCALE_FACTOR);
+    const sqrtY = sqrt(q[i][1] * SCALE_FACTOR);
 
     // Calculate difference and square it
     const diff = sqrtX > sqrtY ? sqrtX - sqrtY : sqrtY - sqrtX;
-    return acc + (diff * diff) / SCALE_FACTOR;
+    return acc + diff * diff * 10n;
   }, 0n);
+  console.log(`Sum of squared differences: ${sumSquaredDiff}`);
 
   // Divide by 2 and take square root
-  return bigintSqrt((sumSquaredDiff * SCALE_FACTOR) / 2n);
+  return sqrt(sumSquaredDiff / 2n);
 };
-
-/**
- * Calculate bigint square root using binary search
- */
-function bigintSqrt(value: bigint): bigint {
-  if (value < 0n) {
-    throw new Error("Square root of negative number is not supported");
-  }
-
-  if (value < 2n) {
-    return value;
-  }
-
-  // Binary search for square root
-  let lo = 0n;
-  let hi = value;
-
-  while (lo <= hi) {
-    const mid = (lo + hi) / 2n;
-    const midSquared = mid * mid;
-
-    if (midSquared === value) {
-      return mid;
-    } else if (midSquared < value) {
-      lo = mid + 1n;
-    } else {
-      hi = mid - 1n;
-    }
-  }
-
-  return hi;
-}
 
 export default hellingerDistance;

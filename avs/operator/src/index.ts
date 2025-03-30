@@ -53,8 +53,9 @@ export class LiquidityAnalyzer {
     );
 
     return {
-      volatility: volatilityResult,
       structure: structureResult,
+      transition: transitionScore === -1n ? 0n : transitionScore,
+      volatility: volatilityResult,
     };
   }
 

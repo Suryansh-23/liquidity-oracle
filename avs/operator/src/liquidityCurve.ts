@@ -60,10 +60,6 @@ class LiquidityCurve {
     currentTick: number,
     tickSpacing: number
   ): Promise<Vector<number>> {
-    console.log(typeof currentTick, currentTick);
-    console.log(typeof tickSpacing, tickSpacing);
-    console.log(typeof K, K);
-
     const ticks = Array.from(
       {
         length: 2 * K + 1,

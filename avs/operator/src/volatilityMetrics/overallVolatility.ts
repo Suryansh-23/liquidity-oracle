@@ -1,5 +1,6 @@
+import { sqrt, variance, max, min } from "extra-bigint";
+import { SCALE_FACTOR } from "../constants";
 import { AggregateHistory, VolatilitySnapshot } from "../types";
-import { sqrt, variance } from "extra-bigint";
 import ewmx from "./normalize";
 
 type OverallVolatilityResult = {
@@ -9,6 +10,7 @@ type OverallVolatilityResult = {
 /**
  * Overall Volatility Component: Combines rolling standard deviation, realized volatility, and range
  */
+
 const overallVolatility = (
   snapshots: VolatilitySnapshot[],
   aggHistory: Pick<AggregateHistory, "rsdEMX" | "rvEMX" | "rangeEMX">
@@ -19,10 +21,13 @@ const overallVolatility = (
   );
 
   // Calculate rolling standard deviation
-  const [rsd, rsdEMX] = ewmx(
-    sqrt(variance(...globalLiquidity)),
-    aggHistory.rsdEMX
+  const baseRsd = sqrt(variance(...globalLiquidity));
+  const maxPossibleRsd = sqrt(
+    globalLiquidity.reduce((acc, val) => acc + val * val, 0n)
   );
+  const normalizedRsd = (baseRsd * SCALE_FACTOR) / maxPossibleRsd;
+  const [rsd, rsdEMX] = ewmx(normalizedRsd, aggHistory.rsdEMX);
+  // console.log("rsd:", rsd);
 
   // Calculate differences for realized volatility
   const diffs = globalLiquidity
@@ -39,19 +44,22 @@ const overallVolatility = (
     squaredDiffSum += diff * diff;
   }
   const rv_unscaled = sqrt(squaredDiffSum);
-  const [rv, rvEMX] = ewmx(rv_unscaled, aggHistory.rvEMX);
+  const maxLiquidity = globalLiquidity.reduce(
+    (max, val) => (val > max ? val : max),
+    0n
+  );
+  const normalizedRv = (rv_unscaled * SCALE_FACTOR) / maxLiquidity;
+  const [rv, rvEMX] = ewmx(normalizedRv, aggHistory.rvEMX);
+  // console.log("rv:", rv);
 
   // Calculate range volatility
-  let maxVal = globalLiquidity.length > 0 ? globalLiquidity[0] : 0n;
-  let minVal = maxVal;
-
-  for (const val of globalLiquidity) {
-    if (val > maxVal) maxVal = val;
-    if (val < minVal) minVal = val;
-  }
+  let maxVal = max(...globalLiquidity);
+  let minVal = min(...globalLiquidity);
 
   const rangeVal = maxVal - minVal;
-  const [rangeVol, rangeEMX] = ewmx(rangeVal, aggHistory.rangeEMX);
+  const normalizedRange = (rangeVal * SCALE_FACTOR) / maxVal;
+  const [rangeVol, rangeEMX] = ewmx(normalizedRange, aggHistory.rangeEMX);
+  // console.log("range:", rangeVol);
 
   // Calculate overall volatility as average
   const overallVolatility = (rsd + rv + rangeVol) / 3n;

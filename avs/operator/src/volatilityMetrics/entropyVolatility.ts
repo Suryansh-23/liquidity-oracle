@@ -10,7 +10,7 @@ const entropyVolatility = (snapshots: VolatilitySnapshot[]): bigint => {
   const entropies = snapshots.map((snapshot) =>
     getEntropy(snapshot.liquidity.map((point) => point[1]))
   );
-  console.log("Entropies:", entropies);
+  // console.log("Entropies:", entropies);
 
   return sqrt(variance(...entropies));
 };
@@ -30,7 +30,7 @@ const getEntropy = (snapshot: bigint[]): bigint => {
   for (const val of snapshot) {
     if (val > 0n) {
       const prob = (val * SCALE_FACTOR) / total;
-      entropy += prob * log2(prob);
+      entropy += prob * log2(prob) * log_sf;
     }
   }
 

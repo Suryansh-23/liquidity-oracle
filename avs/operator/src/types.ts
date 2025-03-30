@@ -79,4 +79,5 @@ export interface StructureMetricResults {
 export interface LiquidityMetricsResult {
   volatility: VolatilityResult;
   structure: StructureMetricResults;
+  transition: bigint;
 }

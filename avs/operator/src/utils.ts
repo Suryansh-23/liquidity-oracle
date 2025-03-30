@@ -1,5 +1,6 @@
 import fs from "fs";
 import { Curve, Vector, VectorPair } from "./types";
+import { SCALE_FACTOR } from "./constants";
 
 export const distributionToCurve = (
   distribution: bigint[],
@@ -76,8 +77,7 @@ export const sumNormalize = (
     sum = v.reduce((acc, [_, x]) => acc + x, 0n);
   }
 
-  const scaleFactor = 10000n; // For precision (4 decimal places)
-  return v.map(([x, y]) => [x, (y * scaleFactor) / sum]);
+  return v.map(([x, y]) => [x, (y * SCALE_FACTOR) / sum]);
 };
 
 export const toPrecision = (n: bigint): bigint => {
