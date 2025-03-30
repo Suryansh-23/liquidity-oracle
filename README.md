@@ -1,5 +1,7 @@
 # Liquidity Oracle
 
+![alt text](docs/cover.png)
+
 ## Table of Contents
 
 - [Demo](#demo)
@@ -10,9 +12,12 @@
 - [Setup](#setup)
 - [Applications](#applications)
 - [Extensions & Future Roadmap](#extensions--future-roadmap)
+- [Mathematical Apendix](#mathematical-apendix)
 - [License](#license)
 
 ## Demo
+
+<div style="position: relative; padding-bottom: 42.1875%; height: 0;"><iframe src="https://www.loom.com/embed/0ec9cea34bfb45fdafd271d23b51ff6e?sid=766dfb12-448c-4dd4-9328-69cfd002fef6" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
 ## Overview
 
@@ -200,6 +205,38 @@ The Liquidity Oracle quantifies pool liquidity behavior through several key indi
 - Use multi-signature threshold schemes to aggregate operator responses.
 - Implement BLS or Schnorr signature aggregation for efficient verification.
 - Reduce on-chain storage costs by bundling AVS responses into a single proof.
+
+## Mathematical Apendix
+
+### Cosine Similarity
+
+$$S*C(A, B)\ =\ \frac{\sum*{i=1}^{n} A*i B_i}{\sqrt{\sum*{i=1}^{n}A*i^2} \cdot\sqrt{\sum*{i=1}^{n}B_i^2}}$$
+
+### Hellinger Distance
+
+$$H(P,Q)\ =\ \frac{1}{\sqrt{2}}\sqrt{\sum_{i=1}^{k}{(\sqrt{p_i}\ -\ \sqrt{q_i})^2}}$$
+
+### Rolling Standard Deviation (RSD)
+
+$$L_t^{agg}\ =\ \sum_{i=1}^{n}L_{t,i}\ \text{or a weighted sum}$$
+$$V_{global}^{RSD}(t)\ =\ \sqrt{\frac{1}{N}\ \sum_{j=t-N+1}^{t}(L_j^{agg}-\mu_t)^2}$$
+
+### EWMA of Transition Differences
+
+$$V_{transition}^{EWMA}(t)\ =\ \sqrt{\lambda\ \cdot\ V_{transition}^{EWMA}(t-1)^2\ +\ (1-\lambda)\ \cdot\ (T_t\ -\ T_{t-1})^2}$$
+
+### Entropy-Based
+
+$$p_{t,i}\ =\ \frac{L_{t,i}}{\sum_i L_{t,i}}$$
+
+$$H(t)\ =\ -\sum_{i}p_{t,i}\ log(p_{t,i})$$
+
+$$V_{entropy}(t)\ =\ \sqrt{\frac{1}{N}\sum_{j=t-N+1}^{t}\Big( H(j)-\bar H_t\Big)^2}$$
+
+### Autocorrelation-Based Volatility
+
+$$\rho_1(t)\ =\ corr\Big(L_j^{agg}, L_{j-1}^{agg}\Big)^t_{j=t-N+1}$$
+$$V_temp(t)\ =\ 1\ -\ |\rho_1(t)|$$
 
 ## License
 
