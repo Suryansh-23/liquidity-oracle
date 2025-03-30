@@ -17,7 +17,14 @@
 
 ## Demo
 
-<div style="position: relative; padding-bottom: 42.1875%; height: 0;"><iframe src="https://www.loom.com/embed/0ec9cea34bfb45fdafd271d23b51ff6e?sid=766dfb12-448c-4dd4-9328-69cfd002fef6" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+<div>
+    <a href="https://www.loom.com/share/0ec9cea34bfb45fdafd271d23b51ff6e">
+      <p>Liquidity Oracle : UHI4 Submission - Watch Video</p>
+    </a>
+    <a href="https://www.loom.com/share/0ec9cea34bfb45fdafd271d23b51ff6e">
+      <img style="width:100%;" src="https://cdn.loom.com/sessions/thumbnails/0ec9cea34bfb45fdafd271d23b51ff6e-308a8b9aaffc880b-full-play.gif">
+    </a>
+</div>
 
 ## Overview
 
