@@ -12,7 +12,7 @@
 - [Setup](#setup)
 - [Applications](#applications)
 - [Extensions & Future Roadmap](#extensions--future-roadmap)
-- [Mathematical Apendix](#mathematical-apendix)
+- [Mathematical Appendix](#mathematical-appendix)
 - [License](#license)
 
 ## Demo
@@ -213,7 +213,7 @@ The Liquidity Oracle quantifies pool liquidity behavior through several key indi
 - Implement BLS or Schnorr signature aggregation for efficient verification.
 - Reduce on-chain storage costs by bundling AVS responses into a single proof.
 
-## Mathematical Apendix
+## Mathematical Appendix
 
 ### Cosine Similarity
 
