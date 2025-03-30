@@ -65,7 +65,7 @@ A **Uniswap v4 Hook** responsible for maintaining pool metrics and triggering AV
 - Calculates **structural liquidity parameters**.
 - Signs and submits results **on-chain**.
 
-![alt text](architecture.png)
+![alt text](docs/architecture.png)
 
 ## Key Metrics
 
