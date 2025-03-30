@@ -1,4 +1,4 @@
-import { usePoolMetrics, formatMetric } from "./lib/hooks";
+import { usePoolMetrics, formatMetric, useConnectionStatus } from "./lib/hooks";
 import { MetricCard } from "./components/MetricCard";
 import { StatusBadge } from "./components/StatusBadge";
 
@@ -17,7 +17,8 @@ const METRIC_COLORS = {
 };
 
 export default function App() {
-  const { current: metrics, history, status } = usePoolMetrics(ORACLE_ADDRESS);
+  const { current: metrics, history } = usePoolMetrics(ORACLE_ADDRESS);
+  const connectionStatus = useConnectionStatus();
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
@@ -28,8 +29,11 @@ export default function App() {
               Liquidity Oracle Dashboard
             </h1>
             <StatusBadge
-              isConnected={status.isConnected}
-              lastUpdate={status.lastUpdate}
+              isConnected={connectionStatus.isConnected}
+              lastUpdate={connectionStatus.lastUpdate}
+              networkName={connectionStatus.networkName}
+              blockNumber={connectionStatus.blockNumber}
+              error={connectionStatus.error}
             />
           </div>
         </div>

@@ -79,6 +79,9 @@ export function usePoolMetrics(oracleAddress: string) {
   const [status, setStatus] = useState<ConnectionStatus>({
     isConnected: false,
     lastUpdate: null,
+    networkName: null,
+    blockNumber: null,
+    error: null,
   });
 
   useEffect(() => {
@@ -90,16 +93,17 @@ export function usePoolMetrics(oracleAddress: string) {
     // Create the event listener
     const unwatch = client.watchEvent({
       address: oracleAddress as `0x${string}`,
-      event: EVENT_ABI, // don't touch this until necessary
+      event: EVENT_ABI,
       onLogs: (logs) => {
         const [log] = logs;
         if (log) {
           const newMetrics = log.args.poolMetrics as PoolMetrics;
           setMetrics(newMetrics);
-          setStatus({
+          setStatus((prev) => ({
+            ...prev,
             isConnected: true,
             lastUpdate: new Date(),
-          });
+          }));
 
           // Update historical data
           const timestamp = Date.now();
@@ -137,7 +141,6 @@ export function usePoolMetrics(oracleAddress: string) {
       },
     });
 
-    // Cleanup subscription
     return () => {
       unwatch();
     };
@@ -151,15 +154,22 @@ export function formatMetric(value: bigint): string {
   return (Number(value) / 1e4).toFixed(2);
 }
 
+// Modified connection status to include more details
 export interface ConnectionStatus {
   isConnected: boolean;
   lastUpdate: Date | null;
+  networkName: string | null;
+  blockNumber: bigint | null;
+  error: string | null;
 }
 
 export function useConnectionStatus() {
   const [status, setStatus] = useState<ConnectionStatus>({
     isConnected: false,
     lastUpdate: null,
+    networkName: null,
+    blockNumber: null,
+    error: null,
   });
 
   useEffect(() => {
@@ -167,23 +177,47 @@ export function useConnectionStatus() {
 
     async function checkConnection() {
       const client = createPublicClient({
-        chain: mainnet,
+        chain: {
+          ...mainnet,
+          id: 31337, // Anvil's chain ID
+          name: "Anvil Local Network",
+        },
         transport: http(import.meta.env.VITE_RPC_URL),
       });
 
       try {
-        await client.getBlockNumber();
-        setStatus((prev) => ({ ...prev, isConnected: true }));
-      } catch {
-        setStatus((prev) => ({ ...prev, isConnected: false }));
+        // Try to get both block number and chain ID to verify connection
+        const [blockNumber, chainId] = await Promise.all([
+          client.getBlockNumber(),
+          client.getChainId(),
+        ]);
+
+        setStatus((prev) => ({
+          ...prev,
+          isConnected: true,
+          lastUpdate: new Date(),
+          networkName:
+            chainId === 31337 ? "Anvil Local Network" : "Unknown Network",
+          blockNumber,
+          error: null,
+        }));
+      } catch (err) {
+        setStatus((prev) => ({
+          ...prev,
+          isConnected: false,
+          networkName: null,
+          blockNumber: null,
+          error:
+            err instanceof Error ? err.message : "Failed to connect to network",
+        }));
       }
     }
 
     // Initial check
     checkConnection();
 
-    // Set up periodic ping
-    pingInterval = setInterval(checkConnection, 5000);
+    // Set up periodic ping every 3 seconds
+    pingInterval = setInterval(checkConnection, 3000);
 
     return () => {
       clearInterval(pingInterval);

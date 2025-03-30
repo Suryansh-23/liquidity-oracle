@@ -4,12 +4,19 @@ import { useEffect, useState } from "react";
 interface StatusBadgeProps {
   isConnected: boolean;
   lastUpdate: Date | null;
+  networkName?: string | null;
+  blockNumber?: bigint | null;
+  error?: string | null;
 }
 
-export function StatusBadge({ isConnected, lastUpdate }: StatusBadgeProps) {
+export function StatusBadge({
+  isConnected,
+  lastUpdate,
+  networkName,
+  blockNumber,
+}: StatusBadgeProps) {
   const [timeAgo, setTimeAgo] = useState<string>("");
 
-  // Update the time ago string every second
   useEffect(() => {
     if (!lastUpdate) return;
 
@@ -38,9 +45,29 @@ export function StatusBadge({ isConnected, lastUpdate }: StatusBadgeProps) {
             }`}
           ></span>
         </span>
-        <span className="text-gray-300">
-          {isConnected ? "Connected" : "Disconnected"}
-        </span>
+        <div className="flex flex-col">
+          <span className="text-gray-300">
+            {isConnected ? (
+              <span className="flex items-center gap-2">
+                <span>{networkName || "Connected"}</span>
+                {blockNumber && (
+                  <span className="text-gray-400 text-xs">
+                    (Block: {blockNumber.toString()})
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <span>Disconnected</span>
+                {/* {error && (
+                  <span className="text-red-400 text-xs">
+                    Error Connecting...
+                  </span>
+                )} */}
+              </span>
+            )}
+          </span>
+        </div>
       </div>
       {lastUpdate && (
         <div className="text-gray-400 border-l border-gray-600 pl-2 flex gap-2">
